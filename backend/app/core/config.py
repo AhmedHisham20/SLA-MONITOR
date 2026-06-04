@@ -18,12 +18,12 @@ class Settings(BaseSettings):
     FACEBOOK_APP_SECRET: Optional[str] = None
     FACEBOOK_VERIFY_TOKEN: str = "messenger-sla-verify-token"
     FACEBOOK_ACCESS_TOKEN: Optional[str] = None
-    FACEBOOK_GRAPH_API_VERSION: str = "v18.0"
+    FACEBOOK_GRAPH_API_VERSION: str = "v22.0"
 
     WHATSAPP_PHONE_NUMBER_ID: Optional[str] = None
     WHATSAPP_ACCESS_TOKEN: Optional[str] = None
-    WHATSAPP_API_VERSION: str = "v18.0"
-    WHATSAPP_API_URL: str = "https://graph.facebook.com/v18.0"
+    WHATSAPP_API_VERSION: str = "v22.0"
+    WHATSAPP_API_URL: str = "https://graph.facebook.com/v22.0"
 
     SLA_DELAY_THRESHOLD_MINUTES: int = 5
     WORKING_HOURS_START: str = "10:00"

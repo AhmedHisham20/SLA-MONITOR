@@ -33,7 +33,10 @@ export default function Settings() {
     setSaving(true)
     try {
       const res = await settingsApi.update(form)
-      setForm(res)
+      setForm((prev) => ({
+        ...res,
+        whatsapp_access_token: prev.whatsapp_access_token || res.whatsapp_access_token,
+      }))
       toast.success('Settings saved')
     } catch {
       toast.error('Failed to save')

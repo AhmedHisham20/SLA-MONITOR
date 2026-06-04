@@ -35,8 +35,9 @@ async def send_whatsapp_message(
     async with httpx.AsyncClient(timeout=30) as client:
         try:
             response = await client.post(url, json=payload, headers=headers)
-            if response.status_code == 200:
-                logger.info(f"WhatsApp alert sent to {to}")
+            if response.status_code in [200, 201]:
+                result = response.json()
+                logger.info(f"WhatsApp API response: {result}")
                 return True
             else:
                 logger.error(f"WhatsApp API error: {response.status_code} - {response.text}")

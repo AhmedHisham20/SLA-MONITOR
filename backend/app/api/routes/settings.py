@@ -30,6 +30,8 @@ def get_settings(db: Session = Depends(get_db), admin: User = Depends(require_ad
 def update_settings(update: SystemSettingsUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     settings = _get_or_create_settings(db)
     for field, value in update.model_dump(exclude_unset=True).items():
+        if value is None and field in ['whatsapp_access_token', 'facebook_access_token']:
+            continue
         setattr(settings, field, value)
     db.commit()
     db.refresh(settings)

@@ -29,7 +29,18 @@ async def check_pending_sla():
         ).all()
 
         for conv in pending_convs:
-            check_and_update_sla(conv, db, settings_obj)
+            triggered, body = check_and_update_sla(conv, db, settings_obj)
+            if triggered and body and settings_obj:
+                recipient = settings_obj.whatsapp_recipient_number
+                pn_id = settings_obj.whatsapp_phone_number_id
+                token = settings_obj.whatsapp_access_token
+                if recipient and pn_id and token:
+                    await send_whatsapp_message(
+                        to=recipient,
+                        message=body,
+                        phone_number_id=pn_id,
+                        access_token=token,
+                    )
 
         logger.info(f"Checked {len(pending_convs)} pending conversations")
     except Exception as e:

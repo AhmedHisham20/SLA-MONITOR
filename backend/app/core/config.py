@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     COMPANY_NAME: str = "SLA Monitor"
     DEMO_MODE: bool = False
 
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "https://dashboard.ahmedhisham.site"]
 
     class Config:
         env_file = ".env"

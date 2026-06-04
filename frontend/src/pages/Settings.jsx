@@ -47,7 +47,11 @@ export default function Settings() {
 
   const handleTestWhatsApp = async () => {
     try {
-      const to = form.whatsapp_recipient_number || form.whatsapp_phone_number_id
+      const to = form.whatsapp_recipient_number
+      if (!to) {
+        toast.error('Please enter a Recipient Phone Number first')
+        return
+      }
       const res = await whatsapp.test(to)
       toast.success(res.success ? 'Test message sent!' : 'Test failed')
     } catch {

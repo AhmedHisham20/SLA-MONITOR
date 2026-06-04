@@ -56,10 +56,11 @@ def check_and_update_sla(
         conversation.alert_sent = True
         conversation.alert_sent_at = now
 
+        recipient = settings_obj.whatsapp_recipient_number or "not-configured"
         alert = Alert(
             conversation_id=conversation.id,
             alert_type=AlertType.WHATSAPP,
-            recipient=settings_obj.whatsapp_recipient_number or settings_obj.whatsapp_phone_number_id or "admin",
+            recipient=recipient,
             message_body=alert_body,
             status=AlertStatus.SENT,
         )

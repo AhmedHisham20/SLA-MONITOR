@@ -1,0 +1,13 @@
+node_modules/
+dist/
+env/
+.venv/
+*.pyc
+__pycache__/
+.env
+.env.example
+*.log
+*.db
+messenger_sla.db
+postgres_data/
+.DS_Store

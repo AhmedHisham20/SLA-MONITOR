@@ -72,8 +72,10 @@ export const settings = {
   get: () => api.get('/settings').then((r) => r.data),
   update: (data) => api.put('/settings', data).then((r) => r.data),
   pages: () => api.get('/settings/pages').then((r) => r.data),
-  addPage: (pageId, pageName) =>
-    api.post('/settings/pages', null, { params: { page_id: pageId, page_name: pageName } }).then((r) => r.data),
+  addPage: (pageId, pageName, accessToken = '') =>
+    api.post('/settings/pages', null, { params: { page_id: pageId, page_name: pageName, access_token: accessToken } }).then((r) => r.data),
+  updateToken: (pageId, accessToken) =>
+    api.put(`/settings/pages/${pageId}/token`, null, { params: { access_token: accessToken } }).then((r) => r.data),
   removePage: (pageId) => api.delete(`/settings/pages/${pageId}`).then((r) => r.data),
   toggleMonitoring: (pageId, enabled) =>
     api.post(`/settings/pages/${pageId}/monitoring`, null, { params: { enabled } }).then((r) => r.data),

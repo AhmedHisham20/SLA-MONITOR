@@ -62,14 +62,27 @@ export default function Settings() {
   const handleAddPage = async () => {
     const pageId = prompt('Enter Facebook Page ID:')
     const pageName = prompt('Enter Page Name:')
+    const accessToken = prompt('Enter Page Access Token (from Meta Developer Portal):')
     if (pageId && pageName) {
       try {
-        await settingsApi.addPage(pageId, pageName)
+        await settingsApi.addPage(pageId, pageName, accessToken || '')
         const p = await settingsApi.pages()
         setPages(Array.isArray(p) ? p : [])
         toast.success('Page added')
       } catch {
         toast.error('Failed to add page')
+      }
+    }
+  }
+
+  const handleUpdateToken = async (pageId, pageName) => {
+    const token = prompt(`Enter new Access Token for ${pageName}:`)
+    if (token) {
+      try {
+        await settingsApi.updateToken(pageId, token)
+        toast.success('Access token updated')
+      } catch {
+        toast.error('Failed to update token')
       }
     }
   }
@@ -295,6 +308,12 @@ export default function Settings() {
                         </span>
                       </td>
                       <td className="py-3 text-right">
+                        <button
+                          onClick={() => handleUpdateToken(page.page_id, page.page_name)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium mr-3"
+                        >
+                          Token
+                        </button>
                         <button
                           onClick={() => handleRemovePage(page.page_id)}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"

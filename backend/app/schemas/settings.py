@@ -54,4 +54,3 @@ class FacebookSettingsUpdate(BaseModel):
 class AddPageRequest(BaseModel):
     page_id: str
     page_name: str
-    access_token: str = ""

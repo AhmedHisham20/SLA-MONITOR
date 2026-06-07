@@ -59,7 +59,7 @@ export default function Settings() {
     }
   }
 
-  const [newPage, setNewPage] = useState({ page_id: '', page_name: '' })
+  const [newPage, setNewPage] = useState({ page_id: '', page_name: '', access_token: '' })
 
   const handleAddPage = async () => {
     if (!newPage.page_id || !newPage.page_name) {
@@ -67,7 +67,7 @@ export default function Settings() {
       return
     }
     try {
-      await settingsApi.addPage(newPage.page_id, newPage.page_name)
+      await settingsApi.addPage(newPage.page_id, newPage.page_name, newPage.access_token || '')
       const p = await settingsApi.pages()
       setPages(Array.isArray(p) ? p : [])
       setNewPage({ page_id: '', page_name: '', access_token: '' })
@@ -322,6 +322,12 @@ export default function Settings() {
                 placeholder="Page Name"
                 value={newPage.page_name}
                 onChange={(e) => setNewPage((f) => ({ ...f, page_name: e.target.value }))}
+              />
+              <input
+                className="input"
+                placeholder="Page Access Token"
+                value={newPage.access_token}
+                onChange={(e) => setNewPage((f) => ({ ...f, access_token: e.target.value }))}
               />
               <button onClick={handleAddPage} className="btn-primary">
                 + Connect Page

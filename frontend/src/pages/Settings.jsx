@@ -54,8 +54,9 @@ export default function Settings() {
       }
       const res = await whatsapp.test(to)
       toast.success(res.success ? 'Test message sent!' : 'Test failed')
-    } catch {
-      toast.error('Test failed')
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Test failed'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
     }
   }
 
@@ -72,8 +73,9 @@ export default function Settings() {
       setPages(Array.isArray(p) ? p : [])
       setNewPage({ page_id: '', page_name: '', access_token: '' })
       toast.success('Page added')
-    } catch {
-      toast.error('Failed to add page')
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to add page'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
     }
   }
 

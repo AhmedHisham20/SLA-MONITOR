@@ -59,19 +59,21 @@ export default function Settings() {
     }
   }
 
+  const [newPage, setNewPage] = useState({ page_id: '', page_name: '', access_token: '' })
+
   const handleAddPage = async () => {
-    const pageId = prompt('Enter Facebook Page ID:')
-    const pageName = prompt('Enter Page Name:')
-    const accessToken = prompt('Enter Page Access Token (from Meta Developer Portal):')
-    if (pageId && pageName) {
-      try {
-        await settingsApi.addPage(pageId, pageName, accessToken || '')
-        const p = await settingsApi.pages()
-        setPages(Array.isArray(p) ? p : [])
-        toast.success('Page added')
-      } catch {
-        toast.error('Failed to add page')
-      }
+    if (!newPage.page_id || !newPage.page_name) {
+      toast.error('Page ID and Page Name are required')
+      return
+    }
+    try {
+      await settingsApi.addPage(newPage.page_id, newPage.page_name, newPage.access_token || '')
+      const p = await settingsApi.pages()
+      setPages(Array.isArray(p) ? p : [])
+      setNewPage({ page_id: '', page_name: '', access_token: '' })
+      toast.success('Page added')
+    } catch {
+      toast.error('Failed to add page')
     }
   }
 
@@ -284,9 +286,30 @@ export default function Settings() {
 
         {activeTab === 'Facebook Pages' && (
           <div className="space-y-4 max-w-lg">
-            <button onClick={handleAddPage} className="btn-primary">
-              + Connect Page
-            </button>
+            <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+              <h3 className="font-medium text-gray-900">Add New Page</h3>
+              <input
+                className="input"
+                placeholder="Page ID"
+                value={newPage.page_id}
+                onChange={(e) => setNewPage((f) => ({ ...f, page_id: e.target.value }))}
+              />
+              <input
+                className="input"
+                placeholder="Page Name"
+                value={newPage.page_name}
+                onChange={(e) => setNewPage((f) => ({ ...f, page_name: e.target.value }))}
+              />
+              <input
+                className="input"
+                placeholder="Page Access Token (from Meta Developer Portal)"
+                value={newPage.access_token}
+                onChange={(e) => setNewPage((f) => ({ ...f, access_token: e.target.value }))}
+              />
+              <button onClick={handleAddPage} className="btn-primary">
+                + Connect Page
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -294,6 +317,7 @@ export default function Settings() {
                     <th className="text-left py-3 font-medium text-gray-500">Page Name</th>
                     <th className="text-left py-3 font-medium text-gray-500">Page ID</th>
                     <th className="text-left py-3 font-medium text-gray-500">Status</th>
+                    <th className="text-left py-3 font-medium text-gray-500">Token</th>
                     <th className="text-right py-3 font-medium text-gray-500">Action</th>
                   </tr>
                 </thead>
@@ -305,6 +329,11 @@ export default function Settings() {
                       <td className="py-3">
                         <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-xs font-medium">
                           Connected
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <span className={`text-xs ${page.access_token ? 'text-green-600' : 'text-red-500'}`}>
+                          {page.access_token ? 'Set' : 'Missing'}
                         </span>
                       </td>
                       <td className="py-3 text-right">
@@ -325,7 +354,7 @@ export default function Settings() {
                   ))}
                   {pages.filter((p) => p.is_connected).length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-gray-400">
+                      <td colSpan={5} className="py-6 text-center text-gray-400">
                         No pages connected
                       </td>
                     </tr>

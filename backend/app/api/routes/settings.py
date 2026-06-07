@@ -44,7 +44,10 @@ def get_pages(db: Session = Depends(get_db), admin: User = Depends(require_admin
 
 
 @router.post("/pages")
-def add_page(page_id: str, page_name: str, access_token: str = "", db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def add_page(update: dict, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    page_id = update.get("page_id", "")
+    page_name = update.get("page_name", "")
+    access_token = update.get("access_token", "")
     existing = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Page already connected")

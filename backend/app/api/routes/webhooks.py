@@ -17,11 +17,8 @@ async def verify_webhook(
     hub_verify_token: str = Query(None, alias="hub.verify_token"),
     hub_challenge: str = Query(None, alias="hub.challenge"),
 ):
-    expected_token = settings.FACEBOOK_VERIFY_TOKEN
-    if not expected_token:
-        settings_obj = db.query(SystemSettings).first()
-        if settings_obj and settings_obj.facebook_verify_token:
-            expected_token = settings_obj.facebook_verify_token
+    settings_obj = db.query(SystemSettings).first()
+    expected_token = settings_obj.facebook_verify_token if (settings_obj and settings_obj.facebook_verify_token) else settings.FACEBOOK_VERIFY_TOKEN
 
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
         logger.info("Webhook verified successfully")

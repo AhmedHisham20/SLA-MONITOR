@@ -141,7 +141,7 @@ def is_automated_message(msg: dict) -> bool:
                 return True
 
     app_id = msg.get("app_id")
-    if app_id and app_id != 0:
+    if app_id and str(app_id) == "263902037430900":
         return True
 
     metadata = msg.get("metadata", {}) or {}

@@ -16,6 +16,7 @@ class SystemSettingsResponse(BaseModel):
     whatsapp_phone_number_id: Optional[str] = None
     whatsapp_recipient_number: Optional[str] = None
     facebook_verify_token: Optional[str] = None
+    facebook_access_token: Optional[str] = None
 
     class Config:
         from_attributes = True

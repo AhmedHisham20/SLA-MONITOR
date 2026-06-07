@@ -174,6 +174,29 @@ export default function Settings() {
                 placeholder="UTC"
               />
             </div>
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="font-medium text-gray-900 mb-3">Facebook Integration</h3>
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verify Token</label>
+                <input
+                  className="input"
+                  value={form.facebook_verify_token || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, facebook_verify_token: e.target.value }))}
+                  placeholder="messenger-sla-verify-token"
+                />
+                <p className="text-xs text-gray-400 mt-1">Used for webhook verification with Meta</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Facebook Access Token</label>
+                <input
+                  type="password"
+                  className="input"
+                  value={form.facebook_access_token || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, facebook_access_token: e.target.value }))}
+                  placeholder="Page access token for API calls"
+                />
+              </div>
+            </div>
           </div>
         )}
 

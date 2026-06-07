@@ -49,3 +49,9 @@ class WhatsAppSettingsUpdate(BaseModel):
 class FacebookSettingsUpdate(BaseModel):
     verify_token: str
     access_token: str
+
+
+class AddPageRequest(BaseModel):
+    page_id: str
+    page_name: str
+    access_token: str = ""

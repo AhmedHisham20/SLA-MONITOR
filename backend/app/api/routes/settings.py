@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.settings import SystemSettings
 from app.models.page import FacebookPage
-from app.schemas.settings import SystemSettingsResponse, SystemSettingsUpdate
+from app.schemas.settings import SystemSettingsResponse, SystemSettingsUpdate, AddPageRequest
 from app.api.deps import require_admin
 from app.models.user import User
 
@@ -44,10 +44,10 @@ def get_pages(db: Session = Depends(get_db), admin: User = Depends(require_admin
 
 
 @router.post("/pages")
-def add_page(update: dict, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    page_id = update.get("page_id", "")
-    page_name = update.get("page_name", "")
-    access_token = update.get("access_token", "")
+def add_page(update: AddPageRequest, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    page_id = update.page_id
+    page_name = update.page_name
+    access_token = update.access_token
     existing = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Page already connected")

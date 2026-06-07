@@ -48,7 +48,38 @@ def add_page(page_id: str, page_name: str, db: Session = Depends(get_db), admin:
     existing = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Page already connected")
-    page = FacebookPage(page_id=page_id, page_name=page_name, access_token=access_token or None, monitoring_enabled=False)
+    page = FacebookPage(page_id=page_id, page_name=page_name, monitoring_enabled=False)
+    db.add(page)
+    db.commit()
+    db.refresh(page)
+    return page
+
+
+@router.post("/pages/from-token")
+def add_page_from_token(access_token: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    import httpx
+    try:
+        resp = httpx.get(f"{settings.FACEBOOK_GRAPH_API_URL}/me", params={
+            "fields": "id,name",
+            "access_token": access_token,
+        }, timeout=15)
+        data = resp.json()
+        if "id" not in data or "name" not in data:
+            raise HTTPException(status_code=400, detail=f"Invalid token: {data.get('error', {}).get('message', 'unknown error')}")
+        page_id = data["id"]
+        page_name = data["name"]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not verify token: {str(e)}")
+
+    existing = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
+    if existing:
+        existing.access_token = access_token
+        existing.is_connected = True
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    page = FacebookPage(page_id=page_id, page_name=page_name, access_token=access_token, monitoring_enabled=False)
     db.add(page)
     db.commit()
     db.refresh(page)

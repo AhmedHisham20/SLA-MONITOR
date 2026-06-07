@@ -61,6 +61,8 @@ export default function Settings() {
   }
 
   const [newPage, setNewPage] = useState({ page_id: '', page_name: '', access_token: '' })
+  const [connectToken, setConnectToken] = useState('')
+  const [connecting, setConnecting] = useState(false)
 
   const handleAddPage = async () => {
     if (!newPage.page_id || !newPage.page_name) {
@@ -76,6 +78,26 @@ export default function Settings() {
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to add page'
       toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    }
+  }
+
+  const handleConnectFromToken = async () => {
+    if (!connectToken) {
+      toast.error('Enter your Page Access Token')
+      return
+    }
+    setConnecting(true)
+    try {
+      await settingsApi.addPageFromToken(connectToken)
+      const p = await settingsApi.pages()
+      setPages(Array.isArray(p) ? p : [])
+      setConnectToken('')
+      toast.success('Page connected successfully!')
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to connect'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -311,30 +333,45 @@ export default function Settings() {
 
         {activeTab === 'Facebook Pages' && (
           <div className="space-y-4 max-w-lg">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-              <h3 className="font-medium text-gray-900">Add New Page</h3>
-              <input
-                className="input"
-                placeholder="Page ID"
-                value={newPage.page_id}
-                onChange={(e) => setNewPage((f) => ({ ...f, page_id: e.target.value }))}
-              />
-              <input
-                className="input"
-                placeholder="Page Name"
-                value={newPage.page_name}
-                onChange={(e) => setNewPage((f) => ({ ...f, page_name: e.target.value }))}
-              />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <h3 className="font-medium text-blue-900">Quick Connect (Recommended)</h3>
+              <p className="text-sm text-blue-700">Paste your Page Access Token and we'll fetch the page info automatically.</p>
               <input
                 className="input"
                 placeholder="Page Access Token"
-                value={newPage.access_token}
-                onChange={(e) => setNewPage((f) => ({ ...f, access_token: e.target.value }))}
+                value={connectToken}
+                onChange={(e) => setConnectToken(e.target.value)}
               />
-              <button onClick={handleAddPage} className="btn-primary">
-                + Connect Page
+              <button onClick={handleConnectFromToken} disabled={connecting} className="btn-primary">
+                {connecting ? 'Connecting...' : 'Connect Page'}
               </button>
             </div>
+            <details className="text-sm text-gray-500 cursor-pointer">
+              <summary className="font-medium">Manual entry (Page ID + Name)</summary>
+              <div className="mt-3 bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                <input
+                  className="input"
+                  placeholder="Page ID"
+                  value={newPage.page_id}
+                  onChange={(e) => setNewPage((f) => ({ ...f, page_id: e.target.value }))}
+                />
+                <input
+                  className="input"
+                  placeholder="Page Name"
+                  value={newPage.page_name}
+                  onChange={(e) => setNewPage((f) => ({ ...f, page_name: e.target.value }))}
+                />
+                <input
+                  className="input"
+                  placeholder="Page Access Token"
+                  value={newPage.access_token}
+                  onChange={(e) => setNewPage((f) => ({ ...f, access_token: e.target.value }))}
+                />
+                <button onClick={handleAddPage} className="btn-primary">
+                  + Add Page
+                </button>
+              </div>
+            </details>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

@@ -74,6 +74,8 @@ export const settings = {
   pages: () => api.get('/settings/pages').then((r) => r.data),
   addPage: (pageId, pageName, accessToken = '') =>
     api.post('/settings/pages', null, { params: { page_id: pageId, page_name: pageName, access_token: accessToken } }).then((r) => r.data),
+  addPageFromToken: (accessToken) =>
+    api.post('/settings/pages/from-token', null, { params: { access_token: accessToken } }).then((r) => r.data),
   updateToken: (pageId, accessToken) =>
     api.put(`/settings/pages/${pageId}/token`, null, { params: { access_token: accessToken } }).then((r) => r.data),
   removePage: (pageId) => api.delete(`/settings/pages/${pageId}`).then((r) => r.data),

@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     FACEBOOK_VERIFY_TOKEN: str = "messenger-sla-verify-token"
     FACEBOOK_ACCESS_TOKEN: Optional[str] = None
     FACEBOOK_GRAPH_API_VERSION: str = "v22.0"
+    FACEBOOK_GRAPH_API_URL: str = "https://graph.facebook.com/v22.0"
 
     WHATSAPP_PHONE_NUMBER_ID: Optional[str] = None
     WHATSAPP_ACCESS_TOKEN: Optional[str] = None

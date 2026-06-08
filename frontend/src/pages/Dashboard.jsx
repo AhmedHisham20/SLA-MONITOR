@@ -8,11 +8,13 @@ import {
   CheckCircle,
   Users,
   Activity,
+  RefreshCw,
 } from 'lucide-react'
 
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [pages, setPages] = useState([])
   const [selectedPage, setSelectedPage] = useState('')
 
@@ -23,7 +25,8 @@ export default function Dashboard() {
     }).catch(() => {})
   }, [])
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isManual = false) => {
+    if (isManual) setRefreshing(true)
     try {
       const params = selectedPage ? { page_id: selectedPage } : {}
       const res = await dashboard.stats(params)
@@ -32,6 +35,7 @@ export default function Dashboard() {
       // silently fail
     } finally {
       setLoading(false)
+      if (isManual) setTimeout(() => setRefreshing(false), 500)
     }
   }, [selectedPage])
 
@@ -67,6 +71,9 @@ export default function Dashboard() {
               </option>
             ))}
           </select>
+          <button onClick={() => fetchData(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Refresh now">
+            <RefreshCw className={`w-4 h-4 text-gray-500 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
           <span className="text-xs text-gray-500">Auto-refreshes every 30s</span>
         </div>
       </div>

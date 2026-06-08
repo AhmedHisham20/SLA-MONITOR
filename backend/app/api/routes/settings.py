@@ -6,6 +6,7 @@ from app.models.page import FacebookPage
 from app.schemas.settings import SystemSettingsResponse, SystemSettingsUpdate
 from app.api.deps import require_admin
 from app.models.user import User
+from app.core.config import settings
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 

@@ -9,11 +9,28 @@ from app.services.sla import check_and_update_sla, is_automated_message
 
 async def process_webhook_event(entry: dict, db: Session):
     try:
+        from app.services.event_logger import log_event
+        log_event("info", "webhook", f"Entry keys: {list(entry.keys())}, entry id: {entry.get('id')}")
+
         changes = entry.get("changes", [])
+        if not changes:
+            messaging = entry.get("messaging", [])
+            if messaging:
+                log_event("info", "webhook", f"Has messaging array ({len(messaging)} items) instead of changes")
+                for msg in messaging:
+                    sender_id = msg.get("sender", {}).get("id", "")
+                    page_id = msg.get("recipient", {}).get("id", "")
+                    message_data = msg.get("message", {})
+                    log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:50]}")
+            else:
+                log_event("warning", "webhook", f"No changes or messaging in entry, keys: {list(entry.keys())}")
+
         for change in changes:
             value = change.get("value", {})
+            log_event("info", "webhook", f"Change field: {change.get('field')}, value keys: {list(value.keys())[:5]}")
 
             if "conversations" not in value and "messages" not in value:
+                log_event("warning", "webhook", f"Skipping - no conversations/messages in value. keys: {list(value.keys())[:8]}")
                 continue
 
             page_id = value.get("page_id") or entry.get("id")

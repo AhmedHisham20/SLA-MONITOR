@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { settings as settingsApi, whatsapp } from '../services/api'
+import { settings as settingsApi, whatsapp, logs as logsApi } from '../services/api'
 import toast from 'react-hot-toast'
 
-const tabs = ['General', 'SLA', 'WhatsApp', 'Facebook Pages', 'Page Monitoring']
+const tabs = ['General', 'SLA', 'WhatsApp', 'Facebook Pages', 'Page Monitoring', 'Logs']
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('General')
@@ -10,6 +10,8 @@ export default function Settings() {
   const [pages, setPages] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [logs, setLogs] = useState([])
+  const [logsLoading, setLogsLoading] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,6 +30,26 @@ export default function Settings() {
     }
     fetchData()
   }, [])
+
+  const fetchLogs = async () => {
+    setLogsLoading(true)
+    try {
+      const res = await logsApi.get()
+      setLogs(Array.isArray(res) ? res : [])
+    } catch {
+      // silent
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'Logs') {
+      fetchLogs()
+      const interval = setInterval(fetchLogs, 10000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab])
 
   const handleSave = async () => {
     setSaving(true)
@@ -423,6 +445,30 @@ export default function Settings() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'Logs' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-gray-900">System Events</h3>
+              <button onClick={fetchLogs} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                ↻ Refresh
+              </button>
+            </div>
+            <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs max-h-[500px] overflow-y-auto space-y-1">
+              {logsLoading && logs.length === 0 && <div className="text-gray-500">Loading...</div>}
+              {!logsLoading && logs.length === 0 && <div className="text-gray-500">No events yet</div>}
+              {logs.map((log) => (
+                <div key={log.id} className={`${log.level === 'error' ? 'text-red-400' : log.level === 'warning' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                  <span className="text-gray-500">{new Date(log.created_at).toLocaleTimeString()}</span>
+                  {' '}[{log.level}]
+                  {' '}<span className="font-semibold">{log.source}</span>
+                  {' '}{log.message}
+                  {log.details && <span className="text-gray-500"> — {log.details}</span>}
+                </div>
+              ))}
             </div>
           </div>
         )}

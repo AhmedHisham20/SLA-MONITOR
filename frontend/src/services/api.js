@@ -88,4 +88,9 @@ export const whatsapp = {
   update: (data) => api.post('/whatsapp/settings', data).then((r) => r.data),
 }
 
+export const logs = {
+  get: (limit = 100, source = null, level = null) =>
+    api.get('/logs', { params: { limit, source, level } }).then((r) => r.data),
+}
+
 export default api

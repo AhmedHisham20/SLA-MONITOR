@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.models.settings import SystemSettings
 from app.services.webhook import process_webhook_event
+from app.services.event_logger import log_event
 
 router = APIRouter(prefix="/webhook", tags=["Webhooks"])
 
@@ -20,10 +21,13 @@ async def verify_webhook(
     settings_obj = db.query(SystemSettings).first()
     expected_token = settings_obj.facebook_verify_token if (settings_obj and settings_obj.facebook_verify_token) else settings.FACEBOOK_VERIFY_TOKEN
 
+    logger.info(f"Webhook verify: mode={hub_mode!r}, token={hub_verify_token!r}, expected={expected_token!r}, challenge={hub_challenge!r}")
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
+        log_event("info", "webhook", "Webhook verified successfully")
         logger.info("Webhook verified successfully")
         return int(hub_challenge)
-    logger.warning(f"Webhook verification failed: mode={hub_mode}")
+    log_event("error", "webhook", f"Verification failed", f"mode={hub_mode}, token={hub_verify_token}, expected={expected_token}")
+    logger.warning(f"Webhook verification failed: mode={hub_mode!r}, token={hub_verify_token!r}, expected={expected_token!r}")
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
@@ -34,6 +38,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         logger.debug(f"Webhook received: {body}")
 
         entry = body.get("entry", [])
+        log_event("info", "webhook", f"Received {len(entry)} entries")
         for e in entry:
             await process_webhook_event(e, db)
 

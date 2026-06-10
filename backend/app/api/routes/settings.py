@@ -48,7 +48,12 @@ def get_pages(db: Session = Depends(get_db), admin: User = Depends(require_admin
 def add_page(page_id: str, page_name: str, access_token: str = None, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     existing = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Page already connected")
+        if access_token:
+            existing.access_token = access_token
+        existing.is_connected = True
+        db.commit()
+        db.refresh(existing)
+        return existing
     page = FacebookPage(page_id=page_id, page_name=page_name, access_token=access_token or None, monitoring_enabled=False)
     db.add(page)
     db.commit()
@@ -102,10 +107,9 @@ def remove_page(page_id: str, db: Session = Depends(get_db), admin: User = Depen
     page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
-    page.is_connected = False
-    page.monitoring_enabled = False
+    db.delete(page)
     db.commit()
-    return {"message": "Page disconnected"}
+    return {"message": "Page removed"}
 
 
 @router.post("/pages/{page_id}/monitoring")

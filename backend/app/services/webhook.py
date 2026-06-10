@@ -12,18 +12,18 @@ async def process_webhook_event(entry: dict, db: Session):
         from app.services.event_logger import log_event
         log_event("info", "webhook", f"Entry keys: {list(entry.keys())}, entry id: {entry.get('id')}")
 
+        messaging = entry.get("messaging", [])
+        if messaging:
+            log_event("info", "webhook", f"Processing {len(messaging)} messaging entries")
+            for msg in messaging:
+                sender_id = msg.get("sender", {}).get("id", "")
+                page_id = msg.get("recipient", {}).get("id", "")
+                message_data = msg.get("message", {})
+                log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:80]}")
+                await process_messaging_entry(msg, page_id, db)
+            return
+
         changes = entry.get("changes", [])
-        if not changes:
-            messaging = entry.get("messaging", [])
-            if messaging:
-                log_event("info", "webhook", f"Has messaging array ({len(messaging)} items) instead of changes")
-                for msg in messaging:
-                    sender_id = msg.get("sender", {}).get("id", "")
-                    page_id = msg.get("recipient", {}).get("id", "")
-                    message_data = msg.get("message", {})
-                    log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:50]}")
-            else:
-                log_event("warning", "webhook", f"No changes or messaging in entry, keys: {list(entry.keys())}")
 
         for change in changes:
             value = change.get("value", {})
@@ -137,6 +137,66 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
         conversation_id=conversation_id,
         customer_id=sender_id,
         customer_name=sender_name or None,
+        message_content=message_text,
+        message_timestamp=message_time,
+        is_open=True,
+        sla_status=SLAStatus.PENDING,
+        message_count=1,
+    )
+    db.add(conversation)
+    db.commit()
+
+    check_and_update_sla(conversation, db)
+
+
+async def process_messaging_entry(msg: dict, page_id: str, db: Session):
+    from app.services.event_logger import log_event
+    sender_id = msg.get("sender", {}).get("id", "")
+    message_data = msg.get("message", {})
+    if not sender_id or not message_data:
+        return
+
+    page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
+    if not page:
+        page = FacebookPage(page_id=page_id, page_name=f"Page {page_id}", is_connected=True)
+        db.add(page)
+        db.commit()
+
+    page.last_webhook_activity = datetime.now(timezone.utc)
+    db.commit()
+
+    if not page.monitoring_enabled:
+        return
+
+    mid = message_data.get("mid", "")
+    conversation_id = f"conv_{mid}" if mid else f"conv_{sender_id}_{page_id}"
+    message_text = message_data.get("text", "") or ""
+
+    timestamp = msg.get("timestamp", 0)
+    if isinstance(timestamp, (int, float)):
+        message_time = datetime.fromtimestamp(timestamp / 1000 if timestamp > 1e12 else timestamp, tz=timezone.utc)
+    else:
+        message_time = datetime.now(timezone.utc)
+
+    is_page_sender = (sender_id == page_id)
+    if is_page_sender:
+        return
+
+    existing = db.query(Conversation).filter(
+        Conversation.conversation_id == conversation_id,
+        Conversation.customer_id == sender_id,
+    ).first()
+
+    if existing:
+        existing.message_count = (existing.message_count or 0) + 1
+        db.commit()
+        return
+
+    conversation = Conversation(
+        page_id=page.page_id,
+        conversation_id=conversation_id,
+        customer_id=sender_id,
+        customer_name=None,
         message_content=message_text,
         message_timestamp=message_time,
         is_open=True,

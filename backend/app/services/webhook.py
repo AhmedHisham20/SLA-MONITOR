@@ -40,16 +40,20 @@ async def process_webhook_event(entry: dict, db: Session):
                     page_id=page_id,
                     page_name=value.get("page_name", f"Page {page_id}"),
                     is_connected=True,
+                    monitoring_enabled=True,
                 )
                 db.add(page)
                 db.commit()
-
-            page.last_webhook_activity = datetime.now(timezone.utc)
-            db.commit()
-
-            if not page.monitoring_enabled:
-                logger.info(f"Skipping SLA for page {page.page_name} - monitoring disabled")
-                continue
+                page.last_webhook_activity = datetime.now(timezone.utc)
+                db.commit()
+            else:
+                if not page.monitoring_enabled:
+                    page.monitoring_enabled = True
+                    log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name} (changes)")
+                if not page.is_connected:
+                    page.is_connected = True
+                page.last_webhook_activity = datetime.now(timezone.utc)
+                db.commit()
 
             messages = value.get("messages", [])
             for msg in messages:
@@ -209,5 +213,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
     )
     db.add(conversation)
     db.commit()
+
+    log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 
     check_and_update_sla(conversation, db)

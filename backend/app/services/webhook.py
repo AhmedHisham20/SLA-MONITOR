@@ -158,15 +158,19 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
 
     page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
     if not page:
-        page = FacebookPage(page_id=page_id, page_name=f"Page {page_id}", is_connected=True)
+        page = FacebookPage(page_id=page_id, page_name=f"Page {page_id}", is_connected=True, monitoring_enabled=True)
         db.add(page)
         db.commit()
-
-    page.last_webhook_activity = datetime.now(timezone.utc)
-    db.commit()
-
-    if not page.monitoring_enabled:
-        return
+        page.last_webhook_activity = datetime.now(timezone.utc)
+        db.commit()
+    else:
+        if not page.monitoring_enabled:
+            page.monitoring_enabled = True
+            log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name}")
+        if not page.is_connected:
+            page.is_connected = True
+        page.last_webhook_activity = datetime.now(timezone.utc)
+        db.commit()
 
     mid = message_data.get("mid", "")
     conversation_id = f"conv_{mid}" if mid else f"conv_{sender_id}_{page_id}"

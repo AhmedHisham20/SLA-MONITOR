@@ -16,55 +16,62 @@ async def process_webhook_event(entry: dict, db: Session):
         if messaging:
             log_event("info", "webhook", f"Processing {len(messaging)} messaging entries")
             for msg in messaging:
-                sender_id = msg.get("sender", {}).get("id", "")
-                page_id = msg.get("recipient", {}).get("id", "")
-                message_data = msg.get("message", {})
-                log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:80]}")
-                await process_messaging_entry(msg, page_id, db)
+                try:
+                    sender_id = msg.get("sender", {}).get("id", "")
+                    page_id = msg.get("recipient", {}).get("id", "")
+                    message_data = msg.get("message", {})
+                    log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:80]}")
+                    await process_messaging_entry(msg, page_id, db)
+                except Exception as e:
+                    log_event("error", "webhook", f"Error processing messaging entry", str(e)[:200])
             return
 
         changes = entry.get("changes", [])
 
         for change in changes:
-            value = change.get("value", {})
-            log_event("info", "webhook", f"Change field: {change.get('field')}, value keys: {list(value.keys())[:5]}")
+            try:
+                value = change.get("value", {})
+                log_event("info", "webhook", f"Change field: {change.get('field')}, value keys: {list(value.keys())[:5]}")
 
-            if "conversations" not in value and "messages" not in value:
-                log_event("warning", "webhook", f"Skipping - no conversations/messages in value. keys: {list(value.keys())[:8]}")
-                continue
+                if "conversations" not in value and "messages" not in value:
+                    log_event("warning", "webhook", f"Skipping - no conversations/messages in value. keys: {list(value.keys())[:8]}")
+                    continue
 
-            page_id = value.get("page_id") or entry.get("id")
-            page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
-            if not page:
-                page = FacebookPage(
-                    page_id=page_id,
-                    page_name=value.get("page_name", f"Page {page_id}"),
-                    is_connected=True,
-                    monitoring_enabled=True,
-                )
-                db.add(page)
-                db.commit()
-                page.last_webhook_activity = datetime.now(timezone.utc)
-                db.commit()
-            else:
-                if not page.monitoring_enabled:
-                    page.monitoring_enabled = True
-                    log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name} (changes)")
-                if not page.is_connected:
-                    page.is_connected = True
-                page.last_webhook_activity = datetime.now(timezone.utc)
-                db.commit()
+                page_id = value.get("page_id") or entry.get("id")
+                page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
+                if not page:
+                    page = FacebookPage(
+                        page_id=page_id,
+                        page_name=value.get("page_name", f"Page {page_id}"),
+                        is_connected=True,
+                        monitoring_enabled=True,
+                    )
+                    db.add(page)
+                    db.commit()
+                    page.last_webhook_activity = datetime.now(timezone.utc)
+                    db.commit()
+                else:
+                    if not page.monitoring_enabled:
+                        page.monitoring_enabled = True
+                        log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name} (changes)")
+                    if not page.is_connected:
+                        page.is_connected = True
+                    page.last_webhook_activity = datetime.now(timezone.utc)
+                    db.commit()
 
-            messages = value.get("messages", [])
-            for msg in messages:
-                await process_message(msg, page, value, db)
+                messages = value.get("messages", [])
+                for msg in messages:
+                    await process_message(msg, page, value, db)
+            except Exception as e:
+                log_event("error", "webhook", f"Error processing change entry", str(e)[:200])
 
     except Exception as e:
-        logger.error(f"Webhook processing error: {str(e)}")
+        log_event("error", "webhook", f"Webhook processing error", str(e)[:200])
 
 
 async def process_message(msg: dict, page: FacebookPage, value: dict, db: Session):
-    from_id = msg.get("from", {})
+    try:
+        from_id = msg.get("from", {})
     if isinstance(from_id, dict):
         sender_id = from_id.get("id", "")
         sender_name = from_id.get("name", "")
@@ -151,69 +158,77 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
     db.commit()
 
     check_and_update_sla(conversation, db)
+    except Exception as e:
+        from app.services.event_logger import log_event
+        log_event("error", "webhook", f"Error in process_message", str(e)[:200])
 
 
 async def process_messaging_entry(msg: dict, page_id: str, db: Session):
     from app.services.event_logger import log_event
-    sender_id = msg.get("sender", {}).get("id", "")
-    message_data = msg.get("message", {})
-    if not sender_id or not message_data:
-        return
+    try:
+        sender_id = msg.get("sender", {}).get("id", "")
+        message_data = msg.get("message", {})
+        if not sender_id or not message_data:
+            return
 
-    page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
-    if not page:
-        page = FacebookPage(page_id=page_id, page_name=f"Page {page_id}", is_connected=True, monitoring_enabled=True)
-        db.add(page)
+        page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
+        if not page:
+            page = FacebookPage(page_id=page_id, page_name=f"Page {page_id}", is_connected=True, monitoring_enabled=True)
+            db.add(page)
+            db.commit()
+            page.last_webhook_activity = datetime.now(timezone.utc)
+            db.commit()
+        else:
+            if not page.monitoring_enabled:
+                page.monitoring_enabled = True
+                log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name}")
+            if not page.is_connected:
+                page.is_connected = True
+            page.last_webhook_activity = datetime.now(timezone.utc)
+            db.commit()
+
+        message_text = message_data.get("text", "") or ""
+
+        timestamp = msg.get("timestamp", 0)
+        if isinstance(timestamp, (int, float)):
+            message_time = datetime.fromtimestamp(timestamp / 1000 if timestamp > 1e12 else timestamp, tz=timezone.utc)
+        else:
+            message_time = datetime.now(timezone.utc)
+
+        is_page_sender = (sender_id == page_id)
+        if is_page_sender:
+            return
+
+        existing = db.query(Conversation).filter(
+            Conversation.customer_id == sender_id,
+            Conversation.page_id == page_id,
+            Conversation.is_open == True,
+        ).order_by(Conversation.message_timestamp.desc()).first()
+
+        if existing:
+            existing.message_count = (existing.message_count or 0) + 1
+            db.commit()
+            log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
+            return
+
+        new_conv_id = f"conv_{sender_id}_{page_id}_{int(datetime.now(timezone.utc).timestamp())}"
+
+        conversation = Conversation(
+            page_id=page.page_id,
+            conversation_id=new_conv_id,
+            customer_id=sender_id,
+            customer_name=None,
+            message_content=message_text,
+            message_timestamp=message_time,
+            is_open=True,
+            sla_status=SLAStatus.PENDING,
+            message_count=1,
+        )
+        db.add(conversation)
         db.commit()
-        page.last_webhook_activity = datetime.now(timezone.utc)
-        db.commit()
-    else:
-        if not page.monitoring_enabled:
-            page.monitoring_enabled = True
-            log_event("info", "webhook", f"Auto-enabled monitoring for page {page.page_name}")
-        if not page.is_connected:
-            page.is_connected = True
-        page.last_webhook_activity = datetime.now(timezone.utc)
-        db.commit()
 
-    mid = message_data.get("mid", "")
-    conversation_id = f"conv_{mid}" if mid else f"conv_{sender_id}_{page_id}"
-    message_text = message_data.get("text", "") or ""
+        log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 
-    timestamp = msg.get("timestamp", 0)
-    if isinstance(timestamp, (int, float)):
-        message_time = datetime.fromtimestamp(timestamp / 1000 if timestamp > 1e12 else timestamp, tz=timezone.utc)
-    else:
-        message_time = datetime.now(timezone.utc)
-
-    is_page_sender = (sender_id == page_id)
-    if is_page_sender:
-        return
-
-    existing = db.query(Conversation).filter(
-        Conversation.conversation_id == conversation_id,
-        Conversation.customer_id == sender_id,
-    ).first()
-
-    if existing:
-        existing.message_count = (existing.message_count or 0) + 1
-        db.commit()
-        return
-
-    conversation = Conversation(
-        page_id=page.page_id,
-        conversation_id=conversation_id,
-        customer_id=sender_id,
-        customer_name=None,
-        message_content=message_text,
-        message_timestamp=message_time,
-        is_open=True,
-        sla_status=SLAStatus.PENDING,
-        message_count=1,
-    )
-    db.add(conversation)
-    db.commit()
-
-    log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
-
-    check_and_update_sla(conversation, db)
+        check_and_update_sla(conversation, db)
+    except Exception as e:
+        log_event("error", "webhook", f"Error in process_messaging_entry", str(e)[:200])

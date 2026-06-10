@@ -45,4 +45,5 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Webhook processing error: {str(e)}")
+        log_event("error", "webhook", f"Webhook POST handler error", str(e)[:200])
         return {"status": "error", "message": str(e)}

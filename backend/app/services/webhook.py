@@ -8,6 +8,9 @@ from app.services.sla import check_and_update_sla, is_automated_message
 
 
 async def process_webhook_event(entry: dict, db: Session):
+    from app.core.logging import logger as _log
+    _log.error(f"=== PROCESS_WEBHOOK_EVENT CALLED ===")
+    _log.error(f"Entry: {entry}")
     try:
         from app.services.event_logger import log_event
         log_event("info", "webhook", f"Entry keys: {list(entry.keys())}, entry id: {entry.get('id')}")

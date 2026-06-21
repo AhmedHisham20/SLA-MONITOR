@@ -33,9 +33,12 @@ async def verify_webhook(
 
 @router.post("/facebook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
+    logger.error("=== WEBHOOK_POST_HIT ===")
+    logger.error(f"Headers: {dict(request.headers)}")
     try:
         body = await request.json()
         logger.debug(f"Webhook received: {body}")
+        logger.error(f"=== WEBHOOK_BODY: {body} ===")
 
         entry = body.get("entry", [])
         log_event("info", "webhook", f"Received {len(entry)} entries")

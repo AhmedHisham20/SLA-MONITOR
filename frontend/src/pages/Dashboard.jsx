@@ -18,6 +18,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [pages, setPages] = useState([])
   const [selectedPage, setSelectedPage] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -29,7 +31,10 @@ export default function Dashboard() {
   const fetchData = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true)
     try {
-      const params = selectedPage ? { page_id: selectedPage } : {}
+      const params = {}
+      if (selectedPage) params.page_id = selectedPage
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
       const res = await dashboard.stats(params)
       setData(res)
     } catch {
@@ -38,7 +43,7 @@ export default function Dashboard() {
       setLoading(false)
       if (isManual) setTimeout(() => setRefreshing(false), 500)
     }
-  }, [selectedPage])
+  }, [selectedPage, dateFrom, dateTo])
 
   useEffect(() => {
     fetchData()
@@ -72,6 +77,8 @@ export default function Dashboard() {
               </option>
             ))}
           </select>
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input text-sm w-auto" title="From date" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input text-sm w-auto" title="To date" />
           <button onClick={() => fetchData(true)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Refresh now">
             <RefreshCw className={`w-4 h-4 text-gray-500 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
@@ -80,7 +87,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-        <WidgetCard title="Today's Conversations" value={s?.total_conversations_today} icon={MessageSquare} color="blue" loading={loading} />
+        <WidgetCard title={dateFrom || dateTo ? 'Filtered Conversations' : "Today's Conversations"} value={s?.total_conversations_today} icon={MessageSquare} color="blue" loading={loading} />
         <WidgetCard title="Open Conversations" value={s?.open_conversations} icon={Activity} color="purple" loading={loading} />
         <WidgetCard title="Delayed" value={s?.delayed_conversations} icon={AlertTriangle} color="red" loading={loading} />
         <WidgetCard title="Avg Response Time" value={s?.average_response_time_seconds ? `${Math.floor(s.average_response_time_seconds / 60)}m ${s.average_response_time_seconds % 60}s` : 'N/A'} icon={Clock} color="yellow" loading={loading} />

@@ -23,13 +23,15 @@ def _base_monitored_query(db):
 @router.get("/stats", response_model=DashboardResponse)
 async def get_dashboard(
     page_id: str = Query(None),
+    date_from: str = Query(None),
+    date_to: str = Query(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    cache_key = f"dashboard:stats:{page_id or 'all'}"
+    cache_key = f"dashboard:stats:{page_id or 'all'}:{date_from or 'none'}:{date_to or 'none'}"
     cached = await cache_get_json(cache_key)
     if cached:
         return DashboardResponse(**cached)
@@ -37,6 +39,19 @@ async def get_dashboard(
     base = _base_monitored_query(db)
     if page_id:
         base = base.filter(Conversation.page_id == page_id)
+
+    if date_from:
+        try:
+            dt_from = datetime.fromisoformat(date_from)
+            base = base.filter(Conversation.message_timestamp >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.fromisoformat(date_to)
+            base = base.filter(Conversation.message_timestamp <= dt_to)
+        except ValueError:
+            pass
 
     total_today = base.filter(Conversation.message_timestamp >= today_start).count()
 
@@ -67,6 +82,16 @@ async def get_dashboard(
     recent_query = _base_monitored_query(db)
     if page_id:
         recent_query = recent_query.filter(Conversation.page_id == page_id)
+    if date_from:
+        try:
+            recent_query = recent_query.filter(Conversation.message_timestamp >= datetime.fromisoformat(date_from))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            recent_query = recent_query.filter(Conversation.message_timestamp <= datetime.fromisoformat(date_to))
+        except ValueError:
+            pass
     recent = recent_query.order_by(Conversation.message_timestamp.desc()).limit(10).all()
 
     recent_items = []

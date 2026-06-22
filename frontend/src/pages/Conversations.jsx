@@ -94,7 +94,6 @@ export default function Conversations() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-3 font-medium text-gray-500">Customer</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Customer ID</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Moderator</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Page</th>
@@ -112,7 +111,6 @@ export default function Conversations() {
             <tbody>
               {data.items.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-3 font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
                   <td className="py-3 px-3 text-gray-500 text-xs font-mono">{c.customer_id}</td>
                   <td className="py-3 px-3 text-gray-600">{c.moderator_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{c.page_name || '-'}</td>
@@ -172,7 +170,7 @@ export default function Conversations() {
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={13} className="py-8 text-center text-gray-400">No conversations found</td></tr>
+                <tr><td colSpan={12} className="py-8 text-center text-gray-400">No conversations found</td></tr>
               )}
             </tbody>
           </table>

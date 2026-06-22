@@ -102,7 +102,6 @@ export default function Dashboard() {
               <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-2 font-medium text-gray-500">Customer</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Customer ID</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Moderator</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Page</th>
@@ -117,7 +116,6 @@ export default function Dashboard() {
             <tbody>
               {recent.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-2 font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
                   <td className="py-3 px-2 text-gray-500 text-xs font-mono">{c.customer_id}</td>
                   <td className="py-3 px-2 text-gray-600">{c.moderator_name || '-'}</td>
                   <td className="py-3 px-2 text-gray-600">{c.page_name || '-'}</td>

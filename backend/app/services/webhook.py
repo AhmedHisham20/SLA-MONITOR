@@ -196,7 +196,46 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             message_time = datetime.now(timezone.utc)
 
         is_page_sender = (sender_id == page_id)
+
         if is_page_sender:
+            customer_id = msg.get("recipient", {}).get("id", "")
+            if not customer_id:
+                return
+
+            existing = db.query(Conversation).filter(
+                Conversation.customer_id == customer_id,
+                Conversation.page_id == page_id,
+                Conversation.is_open == True,
+            ).order_by(Conversation.message_timestamp.desc()).first()
+
+            if not existing:
+                return
+
+            is_automated = is_automated_message(msg)
+            if is_automated:
+                existing.has_automated_reply = True
+                existing.automated_message_count = (existing.automated_message_count or 0) + 1
+                db.commit()
+                return
+
+            if not existing.has_human_reply:
+                existing.first_reply_timestamp = message_time
+                existing.has_human_reply = True
+                response_time = (message_time - existing.message_timestamp).total_seconds()
+                existing.response_time_seconds = int(response_time)
+                existing.is_open = False
+
+                threshold = 5
+                settings_obj = db.query(SystemSettings).first()
+                if settings_obj:
+                    threshold = settings_obj.sla_threshold_minutes
+
+                if response_time <= threshold * 60:
+                    existing.sla_status = SLAStatus.COMPLIANT
+                else:
+                    existing.sla_status = SLAStatus.DELAYED
+
+            db.commit()
             return
 
         existing = db.query(Conversation).filter(

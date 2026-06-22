@@ -6,7 +6,8 @@ from app.models.page import FacebookPage
 from app.schemas.settings import SystemSettingsResponse, SystemSettingsUpdate
 from app.api.deps import require_admin
 from app.models.user import User
-from app.core.config import settings
+from app.core.config import settings as app_settings
+import httpx
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -65,7 +66,7 @@ def add_page(page_id: str, page_name: str, access_token: str = None, db: Session
 def add_page_from_token(access_token: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     import httpx
     try:
-        resp = httpx.get(f"{settings.FACEBOOK_GRAPH_API_URL}/me", params={
+        resp = httpx.get(f"{app_settings.FACEBOOK_GRAPH_API_URL}/me", params={
             "fields": "id,name",
             "access_token": access_token,
         }, timeout=15)
@@ -124,3 +125,33 @@ def toggle_monitoring(page_id: str, enabled: bool, db: Session = Depends(get_db)
         "page_name": page.page_name,
         "monitoring_enabled": page.monitoring_enabled,
     }
+
+
+@router.post("/pages/{page_id}/subscribe-webhook")
+def subscribe_page_webhook(page_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    page = db.query(FacebookPage).filter(FacebookPage.page_id == page_id).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found")
+    if not page.access_token:
+        raise HTTPException(status_code=400, detail="Page has no access token. Add one first.")
+
+    fields = "messages,messaging_postbacks,message_echoes,standby"
+    try:
+        resp = httpx.post(
+            f"{app_settings.FACEBOOK_GRAPH_API_URL}/{page_id}/subscribed_apps",
+            params={
+                "subscribed_fields": fields,
+                "access_token": page.access_token,
+            },
+            timeout=30,
+        )
+        data = resp.json()
+        if "error" in data:
+            raise HTTPException(status_code=400, detail=f"Facebook API error: {data['error'].get('message', str(data))}")
+        page.webhook_subscribed = True
+        db.commit()
+        return {"page_id": page.page_id, "page_name": page.page_name, "webhook_subscribed": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to subscribe: {str(e)}")

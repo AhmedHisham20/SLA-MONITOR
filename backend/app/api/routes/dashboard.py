@@ -104,6 +104,7 @@ async def get_dashboard(
         recent_items.append(RecentConversation(
             id=c.id,
             customer_name=c.customer_name,
+            customer_id=c.customer_id,
             moderator_name=c.moderator_name,
             page_name=page.page_name if page else None,
             message_timestamp=c.message_timestamp,

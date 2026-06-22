@@ -16,6 +16,7 @@ class DashboardStats(BaseModel):
 class RecentConversation(BaseModel):
     id: str
     customer_name: Optional[str]
+    customer_id: Optional[str] = None
     moderator_name: Optional[str] = None
     page_name: Optional[str]
     message_timestamp: datetime

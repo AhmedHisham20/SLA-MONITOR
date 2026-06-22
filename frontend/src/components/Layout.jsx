@@ -37,17 +37,17 @@ export default function Layout() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-primary-600 to-primary-700">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-white">SLA Monitor</h1>
+            <h1 className="text-lg font-bold text-gray-900">SLA Monitor</h1>
             {demoMode && (
-              <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-200 text-yellow-800 rounded-full">
+              <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
                 <FlaskConical className="w-3 h-3" />
                 DEMO
               </span>
             )}
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -59,21 +59,21 @@ export default function Layout() {
               end={item.end}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary-50 text-primary-700 shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-500' : ''}`} />
+              <item.icon className="w-5 h-5" />
               {item.label}
             </NavLink>
           ))}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50/50">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {user?.full_name?.[0] || 'U'}
             </div>
             <div className="flex-1 min-w-0">

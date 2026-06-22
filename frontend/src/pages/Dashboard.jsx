@@ -101,49 +101,49 @@ export default function Dashboard() {
         <div className="overflow-x-auto">
               <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/50">
-                <th className="table-header">Customer</th>
-                <th className="table-header">Customer ID</th>
-                <th className="table-header">Moderator</th>
-                <th className="table-header">Page</th>
-                <th className="table-header">Received</th>
-                <th className="table-header">Replied</th>
-                <th className="table-header">Response Time</th>
-                <th className="table-header">Waiting</th>
-                <th className="table-header">Status</th>
-                <th className="table-header">Chat</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Customer</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Customer ID</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Moderator</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Page</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Received</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Replied</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Response Time</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Waiting</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Status</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Chat</th>
               </tr>
             </thead>
             <tbody>
               {recent.map((c) => (
-                <tr key={c.id} className="table-row animate-fade-in">
-                  <td className="table-cell font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
-                  <td className="table-cell text-gray-400 font-mono text-xs">{c.customer_id}</td>
-                  <td className="table-cell text-gray-600">{c.moderator_name || '-'}</td>
-                  <td className="table-cell text-gray-600">{c.page_name || '-'}</td>
-                  <td className="table-cell text-gray-600 whitespace-nowrap">{new Date(c.message_timestamp).toLocaleString()}</td>
-                  <td className="table-cell text-gray-600 whitespace-nowrap">{c.first_reply_timestamp ? new Date(c.first_reply_timestamp).toLocaleString() : '-'}</td>
-                  <td className="table-cell text-gray-600">
+                <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-3 px-2 font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
+                  <td className="py-3 px-2 text-gray-500 text-xs font-mono">{c.customer_id}</td>
+                  <td className="py-3 px-2 text-gray-600">{c.moderator_name || '-'}</td>
+                  <td className="py-3 px-2 text-gray-600">{c.page_name || '-'}</td>
+                  <td className="py-3 px-2 text-gray-600">{new Date(c.message_timestamp).toLocaleString()}</td>
+                  <td className="py-3 px-2 text-gray-600">{c.first_reply_timestamp ? new Date(c.first_reply_timestamp).toLocaleString() : '-'}</td>
+                  <td className="py-3 px-2 text-gray-600">
                     {c.response_time_seconds != null
                       ? `${Math.floor(c.response_time_seconds / 60)}m ${c.response_time_seconds % 60}s`
                       : '-'}
                   </td>
-                  <td className="table-cell">
-                    <span className={`badge ${getDelayColor(c.waiting_minutes)}`}>
+                  <td className="py-3 px-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDelayColor(c.waiting_minutes)}`}>
                       {c.waiting_minutes}m
                     </span>
                   </td>
-                  <td className="table-cell">
-                    <span className={`badge ${
-                      c.sla_status === 'delayed' ? 'bg-red-50 text-red-700' :
-                      c.sla_status === 'compliant' ? 'bg-green-50 text-green-700' :
-                      'bg-gray-100 text-gray-600'
+                  <td className="py-3 px-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      c.sla_status === 'delayed' ? 'bg-red-50 text-red-600' :
+                      c.sla_status === 'compliant' ? 'bg-green-50 text-green-600' :
+                      'bg-gray-50 text-gray-600'
                     }`}>
-                      {c.sla_status?.replace('_', ' ')}
+                      {c.sla_status}
                     </span>
                   </td>
-                  <td className="table-cell">
-                    <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
+                  <td className="py-3 px-2">
+                    <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
                       <ExternalLink className="w-3.5 h-3.5" />
                       Open
                     </a>
@@ -151,7 +151,7 @@ export default function Dashboard() {
                 </tr>
               ))}
               {recent.length === 0 && (
-                <tr><td colSpan={10} className="py-10 text-center text-gray-400 text-sm">No conversations yet</td></tr>
+                <tr><td colSpan={9} className="py-6 text-center text-gray-400">No conversations yet</td></tr>
               )}
             </tbody>
           </table>

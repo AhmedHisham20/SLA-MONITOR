@@ -18,9 +18,12 @@ class RecentConversation(BaseModel):
     customer_name: Optional[str]
     page_name: Optional[str]
     message_timestamp: datetime
+    first_reply_timestamp: Optional[datetime] = None
+    response_time_seconds: Optional[int] = None
     waiting_minutes: int
     sla_status: str
     delay_level: str
+    is_open: bool = True
 
     class Config:
         from_attributes = True

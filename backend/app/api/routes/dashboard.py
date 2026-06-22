@@ -77,9 +77,12 @@ async def get_dashboard(
             customer_name=c.customer_name,
             page_name=page.page_name if page else None,
             message_timestamp=c.message_timestamp,
+            first_reply_timestamp=c.first_reply_timestamp,
+            response_time_seconds=c.response_time_seconds,
             waiting_minutes=c.waiting_minutes,
             sla_status=c.sla_status.value if c.sla_status else "pending",
             delay_level=c.delay_level.value if c.delay_level else "none",
+            is_open=c.is_open,
         ))
 
     stats = DashboardStats(

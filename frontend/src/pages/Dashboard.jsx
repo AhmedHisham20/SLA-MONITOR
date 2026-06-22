@@ -91,12 +91,14 @@ export default function Dashboard() {
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Conversations</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+              <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Customer</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Page</th>
-                <th className="text-left py-3 px-2 font-medium text-gray-500">Time</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Received</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Replied</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Response Time</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Waiting</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Status</th>
               </tr>
@@ -106,7 +108,13 @@ export default function Dashboard() {
                 <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-2 font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
                   <td className="py-3 px-2 text-gray-600">{c.page_name || '-'}</td>
-                  <td className="py-3 px-2 text-gray-600">{new Date(c.message_timestamp).toLocaleTimeString()}</td>
+                  <td className="py-3 px-2 text-gray-600">{new Date(c.message_timestamp).toLocaleString()}</td>
+                  <td className="py-3 px-2 text-gray-600">{c.first_reply_timestamp ? new Date(c.first_reply_timestamp).toLocaleString() : '-'}</td>
+                  <td className="py-3 px-2 text-gray-600">
+                    {c.response_time_seconds != null
+                      ? `${Math.floor(c.response_time_seconds / 60)}m ${c.response_time_seconds % 60}s`
+                      : '-'}
+                  </td>
                   <td className="py-3 px-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDelayColor(c.waiting_minutes)}`}>
                       {c.waiting_minutes}m
@@ -124,7 +132,7 @@ export default function Dashboard() {
                 </tr>
               ))}
               {recent.length === 0 && (
-                <tr><td colSpan={5} className="py-6 text-center text-gray-400">No conversations yet</td></tr>
+                <tr><td colSpan={7} className="py-6 text-center text-gray-400">No conversations yet</td></tr>
               )}
             </tbody>
           </table>

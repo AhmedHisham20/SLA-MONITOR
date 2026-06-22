@@ -86,6 +86,8 @@ export default function Conversations() {
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Customer</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Page</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Received</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-500">Replied</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-500">Response Time</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Waiting</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Delay Level</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Status</th>
@@ -99,6 +101,12 @@ export default function Conversations() {
                   <td className="py-3 px-3 font-medium text-gray-900">{c.customer_name || c.customer_id}</td>
                   <td className="py-3 px-3 text-gray-600">{c.page_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{new Date(c.message_timestamp).toLocaleString()}</td>
+                  <td className="py-3 px-3 text-gray-600">{c.first_reply_timestamp ? new Date(c.first_reply_timestamp).toLocaleString() : '-'}</td>
+                  <td className="py-3 px-3 text-gray-600">
+                    {c.response_time_seconds != null
+                      ? `${Math.floor(c.response_time_seconds / 60)}m ${c.response_time_seconds % 60}s`
+                      : '-'}
+                  </td>
                   <td className="py-3 px-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       c.waiting_minutes <= 5 ? 'bg-green-50 text-green-600' :
@@ -142,7 +150,7 @@ export default function Conversations() {
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={8} className="py-8 text-center text-gray-400">No conversations found</td></tr>
+                <tr><td colSpan={10} className="py-8 text-center text-gray-400">No conversations found</td></tr>
               )}
             </tbody>
           </table>

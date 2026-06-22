@@ -127,18 +127,30 @@ export default function Dashboard() {
                       : '-'}
                   </td>
                   <td className="py-3 px-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDelayColor(c.waiting_minutes)}`}>
-                      {c.waiting_minutes}m
-                    </span>
+                    {c.is_open ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDelayColor(c.waiting_minutes)}`}>
+                        {c.waiting_minutes}m
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
+                        ✓ Closed
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      c.sla_status === 'delayed' ? 'bg-red-50 text-red-600' :
-                      c.sla_status === 'compliant' ? 'bg-green-50 text-green-600' :
-                      'bg-gray-50 text-gray-600'
-                    }`}>
-                      {c.sla_status}
-                    </span>
+                    {!c.is_open ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
+                        Closed
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        c.sla_status === 'delayed' ? 'bg-red-50 text-red-600' :
+                        c.sla_status === 'compliant' ? 'bg-green-50 text-green-600' :
+                        'bg-gray-50 text-gray-600'
+                      }`}>
+                        {c.sla_status}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-2">
                     <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">

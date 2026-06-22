@@ -85,6 +85,7 @@ export default function Conversations() {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Customer</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-500">Moderator</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Page</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Received</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Replied</th>
@@ -101,6 +102,7 @@ export default function Conversations() {
               {data.items.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-3 font-medium text-gray-900">{c.customer_name || c.customer_id}</td>
+                  <td className="py-3 px-3 text-gray-600">{c.moderator_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{c.page_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{new Date(c.message_timestamp).toLocaleString()}</td>
                   <td className="py-3 px-3 text-gray-600">{c.first_reply_timestamp ? new Date(c.first_reply_timestamp).toLocaleString() : '-'}</td>
@@ -158,7 +160,7 @@ export default function Conversations() {
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={11} className="py-8 text-center text-gray-400">No conversations found</td></tr>
+                <tr><td colSpan={12} className="py-8 text-center text-gray-400">No conversations found</td></tr>
               )}
             </tbody>
           </table>

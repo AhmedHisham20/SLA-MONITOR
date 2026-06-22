@@ -222,6 +222,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             if not existing.has_human_reply:
                 existing.first_reply_timestamp = message_time
                 existing.has_human_reply = True
+                existing.moderator_name = sender_name or existing.moderator_name
                 response_time = (message_time - existing.message_timestamp).total_seconds()
                 existing.response_time_seconds = int(response_time)
                 existing.is_open = False

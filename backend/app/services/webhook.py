@@ -18,9 +18,16 @@ async def process_webhook_event(entry: dict, db: Session):
             for msg in messaging:
                 try:
                     sender_id = msg.get("sender", {}).get("id", "")
-                    page_id = msg.get("recipient", {}).get("id", "")
+                    recipient_id = msg.get("recipient", {}).get("id", "")
                     message_data = msg.get("message", {})
-                    log_event("info", "webhook", f"Messaging: sender={sender_id}, page={page_id}, text={message_data.get('text', '')[:80]}")
+                    is_echo = message_data.get("is_echo") is True
+                    if is_echo:
+                        page_id = sender_id
+                        customer_id = recipient_id
+                    else:
+                        page_id = recipient_id
+                        customer_id = sender_id
+                    log_event("info", "webhook", f"Messaging: is_echo={is_echo}, sender={sender_id}, recipient={recipient_id}, page={page_id}, text={message_data.get('text', '')[:80]}")
                     await process_messaging_entry(msg, page_id, db)
                 except Exception as e:
                     log_event("error", "webhook", f"Error processing messaging entry", str(e)[:200])

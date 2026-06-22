@@ -135,10 +135,6 @@ def is_automated_message(msg: dict) -> bool:
             if isinstance(tag, str) and tag.lower() in automated_tags:
                 return True
 
-    app_id = msg.get("app_id")
-    if app_id and str(app_id) == "263902037430900":
-        return True
-
     metadata = msg.get("metadata", {}) or {}
     if metadata.get("is_automated") is True:
         return True

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { settings as settingsApi, whatsapp, logs as logsApi } from '../services/api'
 import toast from 'react-hot-toast'
+import { Eye, EyeOff } from 'lucide-react'
 
 const tabs = ['General', 'SLA', 'WhatsApp', 'Facebook Pages', 'Page Monitoring', 'Logs']
 
@@ -10,6 +11,7 @@ export default function Settings() {
   const [pages, setPages] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showWhatsAppToken, setShowWhatsAppToken] = useState(false)
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
 
@@ -324,12 +326,21 @@ export default function Settings() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Access Token
               </label>
-              <input
-                type="password"
-                className="input"
-                value={form.whatsapp_access_token || ''}
-                onChange={(e) => setForm((f) => ({ ...f, whatsapp_access_token: e.target.value }))}
-              />
+              <div className="relative">
+                <input
+                  type={showWhatsAppToken ? 'text' : 'password'}
+                  className="input pr-10"
+                  value={form.whatsapp_access_token || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, whatsapp_access_token: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowWhatsAppToken((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showWhatsAppToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

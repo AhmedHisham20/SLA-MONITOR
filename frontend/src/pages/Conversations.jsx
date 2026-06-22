@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { conversations, settings } from '../services/api'
+import { ExternalLink } from 'lucide-react'
 
 const periods = [
   { value: 'today', label: 'Today' },
@@ -93,6 +94,7 @@ export default function Conversations() {
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Status</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Alert</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Reply</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-500">Chat</th>
               </tr>
             </thead>
             <tbody>
@@ -147,10 +149,16 @@ export default function Conversations() {
                       <span className="text-gray-400 text-xs">-</span>
                     )}
                   </td>
+                  <td className="py-3 px-3">
+                    <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
+                  </td>
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={10} className="py-8 text-center text-gray-400">No conversations found</td></tr>
+                <tr><td colSpan={11} className="py-8 text-center text-gray-400">No conversations found</td></tr>
               )}
             </tbody>
           </table>

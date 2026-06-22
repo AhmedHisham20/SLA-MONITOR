@@ -112,8 +112,6 @@ def is_automated_message(msg: dict) -> bool:
 
     message_data = msg.get("message", {})
     if isinstance(message_data, dict):
-        if message_data.get("is_echo") is True:
-            return True
         if message_data.get("is_automated") is True:
             return True
         if message_data.get("source") == "business":
@@ -123,9 +121,6 @@ def is_automated_message(msg: dict) -> bool:
                 isinstance(l, str) and l.lower() in automation_labels for l in msg_labels
             ):
                 return True
-
-    if msg.get("is_echo") is True:
-        return True
 
     tags = msg.get("tags") or msg.get("tag") or []
     if isinstance(tags, str):

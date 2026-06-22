@@ -24,6 +24,7 @@ class RecentConversation(BaseModel):
     sla_status: str
     delay_level: str
     is_open: bool = True
+    conversation_link: str = ""
 
     class Config:
         from_attributes = True

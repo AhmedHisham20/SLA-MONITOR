@@ -9,6 +9,7 @@ import {
   Users,
   Activity,
   RefreshCw,
+  ExternalLink,
 } from 'lucide-react'
 
 export default function Dashboard() {
@@ -101,6 +102,7 @@ export default function Dashboard() {
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Response Time</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Waiting</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Status</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Chat</th>
               </tr>
             </thead>
             <tbody>
@@ -129,10 +131,16 @@ export default function Dashboard() {
                       {c.sla_status}
                     </span>
                   </td>
+                  <td className="py-3 px-2">
+                    <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
+                  </td>
                 </tr>
               ))}
               {recent.length === 0 && (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-400">No conversations yet</td></tr>
+                <tr><td colSpan={8} className="py-6 text-center text-gray-400">No conversations yet</td></tr>
               )}
             </tbody>
           </table>

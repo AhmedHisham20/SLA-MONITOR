@@ -83,6 +83,7 @@ async def get_dashboard(
             sla_status=c.sla_status.value if c.sla_status else "pending",
             delay_level=c.delay_level.value if c.delay_level else "none",
             is_open=c.is_open,
+            conversation_link=c.conversation_link,
         ))
 
     stats = DashboardStats(

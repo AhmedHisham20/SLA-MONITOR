@@ -50,7 +50,7 @@ class Conversation(Base):
 
     @property
     def conversation_link(self) -> str:
-        return f"https://business.facebook.com/latest/inbox/all?conversation_id={self.conversation_id}"
+        return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.customer_id}"
 
     @property
     def waiting_minutes(self) -> int:

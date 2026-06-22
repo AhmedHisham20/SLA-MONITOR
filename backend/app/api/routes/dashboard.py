@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -42,18 +42,22 @@ async def get_dashboard(
 
     if date_from:
         try:
-            dt_from = datetime.fromisoformat(date_from)
+            dt_from = datetime.fromisoformat(date_from).replace(tzinfo=timezone.utc)
             base = base.filter(Conversation.message_timestamp >= dt_from)
         except ValueError:
             pass
     if date_to:
         try:
-            dt_to = datetime.fromisoformat(date_to)
-            base = base.filter(Conversation.message_timestamp <= dt_to)
+            dt_to = datetime.fromisoformat(date_to).replace(tzinfo=timezone.utc) + timedelta(days=1)
+            base = base.filter(Conversation.message_timestamp < dt_to)
         except ValueError:
             pass
 
-    total_today = base.filter(Conversation.message_timestamp >= today_start).count()
+    has_date_filter = bool(date_from or date_to)
+    if has_date_filter:
+        total_in_range = base.count()
+    else:
+        total_in_range = base.filter(Conversation.message_timestamp >= today_start).count()
 
     open_count = base.filter(Conversation.is_open == True).count()
 
@@ -84,12 +88,12 @@ async def get_dashboard(
         recent_query = recent_query.filter(Conversation.page_id == page_id)
     if date_from:
         try:
-            recent_query = recent_query.filter(Conversation.message_timestamp >= datetime.fromisoformat(date_from))
+            recent_query = recent_query.filter(Conversation.message_timestamp >= datetime.fromisoformat(date_from).replace(tzinfo=timezone.utc))
         except ValueError:
             pass
     if date_to:
         try:
-            recent_query = recent_query.filter(Conversation.message_timestamp <= datetime.fromisoformat(date_to))
+            recent_query = recent_query.filter(Conversation.message_timestamp < datetime.fromisoformat(date_to).replace(tzinfo=timezone.utc) + timedelta(days=1))
         except ValueError:
             pass
     recent = recent_query.order_by(Conversation.message_timestamp.desc()).limit(10).all()
@@ -113,7 +117,7 @@ async def get_dashboard(
         ))
 
     stats = DashboardStats(
-        total_conversations_today=total_today,
+        total_conversations_today=total_in_range,
         open_conversations=open_count,
         delayed_conversations=delayed_count,
         average_response_time_seconds=avg_response,

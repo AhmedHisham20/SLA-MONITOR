@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { conversations, settings } from '../services/api'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Search } from 'lucide-react'
 
 const periods = [
   { value: 'today', label: 'Today' },
@@ -63,7 +63,7 @@ export default function Conversations() {
         </select>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {periods.map((p) => (
           <button
             key={p.value}
@@ -77,6 +77,16 @@ export default function Conversations() {
             {p.label}
           </button>
         ))}
+        <div className="relative ml-auto">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by ID, name..."
+            className="input pl-8 text-sm w-56"
+            value={filters.search || ''}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value || undefined, page: 1 }))}
+          />
+        </div>
       </div>
 
       <div className="card">
@@ -85,6 +95,7 @@ export default function Conversations() {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Customer</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-500">Customer ID</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Moderator</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Page</th>
                 <th className="text-left py-3 px-3 font-medium text-gray-500">Received</th>
@@ -101,7 +112,8 @@ export default function Conversations() {
             <tbody>
               {data.items.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-3 font-medium text-gray-900">{c.customer_name || c.customer_id}</td>
+                  <td className="py-3 px-3 font-medium text-gray-900">{c.customer_name || 'Unknown'}</td>
+                  <td className="py-3 px-3 text-gray-500 text-xs font-mono">{c.customer_id}</td>
                   <td className="py-3 px-3 text-gray-600">{c.moderator_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{c.page_name || '-'}</td>
                   <td className="py-3 px-3 text-gray-600">{new Date(c.message_timestamp).toLocaleString()}</td>
@@ -160,7 +172,7 @@ export default function Conversations() {
                 </tr>
               ))}
               {data.items.length === 0 && (
-                <tr><td colSpan={12} className="py-8 text-center text-gray-400">No conversations found</td></tr>
+                <tr><td colSpan={13} className="py-8 text-center text-gray-400">No conversations found</td></tr>
               )}
             </tbody>
           </table>

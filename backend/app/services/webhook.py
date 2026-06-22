@@ -167,6 +167,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
     from app.services.event_logger import log_event
     try:
         sender_id = msg.get("sender", {}).get("id", "")
+        sender_name = msg.get("sender", {}).get("name", "") or msg.get("sender", {}).get("first_name", "")
         message_data = msg.get("message", {})
         if not sender_id or not message_data:
             return
@@ -256,7 +257,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             page_id=page.page_id,
             conversation_id=new_conv_id,
             customer_id=sender_id,
-            customer_name=None,
+            customer_name=sender_name or None,
             message_content=message_text,
             message_timestamp=message_time,
             is_open=True,

@@ -11,13 +11,11 @@ import {
   X,
   Bell,
   FlaskConical,
-  Activity,
 } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/conversations', icon: MessageSquare, label: 'Conversations' },
-  { to: '/sla-status', icon: Activity, label: 'SLA Status' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

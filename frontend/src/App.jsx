@@ -6,7 +6,6 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Conversations from './pages/Conversations'
-import SlaStatus from './pages/SlaStatus'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
@@ -26,7 +25,6 @@ export default function App() {
           >
             <Route path="/" element={<Dashboard />} />
             <Route path="/conversations" element={<Conversations />} />
-            <Route path="/sla-status" element={<SlaStatus />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

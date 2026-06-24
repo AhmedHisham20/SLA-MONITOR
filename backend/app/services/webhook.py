@@ -115,12 +115,25 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
         is_page_sender = (sender_id == page.page_id)
 
         if not existing and is_page_sender:
-            customer_id = msg.get("from", {}).get("id", "") if isinstance(msg.get("from"), dict) else str(msg.get("from", ""))
-            existing = db.query(Conversation).filter(
-                Conversation.customer_id == customer_id,
-                Conversation.page_id == page.page_id,
-                Conversation.is_open == True,
-            ).order_by(Conversation.message_timestamp.desc()).first()
+            customer_id = ""
+            to_data = msg.get("to", {})
+            if isinstance(to_data, dict):
+                customer_id = to_data.get("id", "")
+            elif isinstance(to_data, str):
+                customer_id = to_data
+            if not customer_id:
+                participants = value.get("participants", [])
+                for p in participants:
+                    pid = p.get("id", "") if isinstance(p, dict) else ""
+                    if pid and pid != page.page_id:
+                        customer_id = pid
+                        break
+            if customer_id:
+                existing = db.query(Conversation).filter(
+                    Conversation.customer_id == customer_id,
+                    Conversation.page_id == page.page_id,
+                    Conversation.is_open == True,
+                ).order_by(Conversation.message_timestamp.desc()).first()
 
         if existing:
             existing.message_count = (existing.message_count or 0) + 1

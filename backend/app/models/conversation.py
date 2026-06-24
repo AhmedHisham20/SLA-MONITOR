@@ -36,6 +36,7 @@ class Conversation(Base):
     sla_status = Column(SAEnum(SLAStatus), default=SLAStatus.PENDING)
     delay_level = Column(SAEnum(DelayLevel), default=DelayLevel.NONE)
     is_open = Column(Boolean, default=True)
+    last_sender_type = Column(String, default='customer')
     alert_sent = Column(Boolean, default=False)
     alert_sent_at = Column(DateTime(timezone=True), nullable=True)
     is_working_hours = Column(Boolean, default=True)
@@ -54,6 +55,8 @@ class Conversation(Base):
 
     @property
     def waiting_minutes(self) -> int:
+        if self.last_sender_type == 'page':
+            return 0
         if self.first_reply_timestamp:
             return int((self.first_reply_timestamp - self.message_timestamp).total_seconds() / 60)
         return int((datetime.now(timezone.utc) - self.message_timestamp).total_seconds() / 60)

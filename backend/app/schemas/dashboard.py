@@ -26,6 +26,7 @@ class RecentConversation(BaseModel):
     sla_status: str
     delay_level: str
     is_open: bool = True
+    is_awaiting_reply: bool = True
     conversation_link: str = ""
 
     class Config:

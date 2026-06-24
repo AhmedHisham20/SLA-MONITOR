@@ -127,20 +127,20 @@ export default function Dashboard() {
                       : '-'}
                   </td>
                   <td className="py-3 px-2">
-                    {c.is_open ? (
+                    {c.is_awaiting_reply ? (
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDelayColor(c.waiting_minutes)}`}>
                         {c.waiting_minutes}m
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
-                        ✓ Closed
+                        ✓ Replied
                       </span>
                     )}
                   </td>
                   <td className="py-3 px-2">
-                    {!c.is_open ? (
+                    {!c.is_awaiting_reply ? (
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
-                        Closed
+                        Responded
                       </span>
                     ) : (
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${

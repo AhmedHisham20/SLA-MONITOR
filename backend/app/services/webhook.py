@@ -131,26 +131,32 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                 if is_automated:
                     existing.has_automated_reply = True
                     existing.automated_message_count = (existing.automated_message_count or 0) + 1
+                    existing.last_sender_type = 'page'
                     db.commit()
                     return
 
-                if not existing.has_human_reply:
-                    existing.first_reply_timestamp = message_time
-                    existing.has_human_reply = True
-                    existing.moderator_name = sender_name or existing.moderator_name
-                    response_time = (message_time - existing.message_timestamp).total_seconds()
-                    existing.response_time_seconds = int(response_time)
-                    existing.is_open = False
+                existing.last_sender_type = 'page'
+                existing.has_human_reply = True
+                existing.moderator_name = sender_name or existing.moderator_name
+                existing.first_reply_timestamp = message_time
+                response_time = (message_time - existing.message_timestamp).total_seconds()
+                existing.response_time_seconds = int(response_time)
 
-                    threshold = 5
-                    settings_obj = db.query(SystemSettings).first()
-                    if settings_obj:
-                        threshold = settings_obj.sla_threshold_minutes
+                threshold = 5
+                settings_obj = db.query(SystemSettings).first()
+                if settings_obj:
+                    threshold = settings_obj.sla_threshold_minutes
 
-                    if response_time <= threshold * 60:
-                        existing.sla_status = SLAStatus.COMPLIANT
-                    else:
-                        existing.sla_status = SLAStatus.DELAYED
+                if response_time <= threshold * 60:
+                    existing.sla_status = SLAStatus.COMPLIANT
+                else:
+                    existing.sla_status = SLAStatus.DELAYED
+            else:
+                existing.last_sender_type = 'customer'
+                existing.sla_status = SLAStatus.PENDING
+                if existing.alert_sent:
+                    existing.alert_sent = False
+                    existing.alert_sent_at = None
 
             db.commit()
             return
@@ -166,6 +172,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             message_content=message_text,
             message_timestamp=message_time,
             is_open=True,
+            last_sender_type='customer',
             sla_status=SLAStatus.PENDING,
             message_count=1,
         )
@@ -231,26 +238,26 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             if is_automated:
                 existing.has_automated_reply = True
                 existing.automated_message_count = (existing.automated_message_count or 0) + 1
+                existing.last_sender_type = 'page'
                 db.commit()
                 return
 
-            if not existing.has_human_reply:
-                existing.first_reply_timestamp = message_time
-                existing.has_human_reply = True
-                existing.moderator_name = sender_name or existing.moderator_name
-                response_time = (message_time - existing.message_timestamp).total_seconds()
-                existing.response_time_seconds = int(response_time)
-                existing.is_open = False
+            existing.last_sender_type = 'page'
+            existing.has_human_reply = True
+            existing.moderator_name = sender_name or existing.moderator_name
+            existing.first_reply_timestamp = message_time
+            response_time = (message_time - existing.message_timestamp).total_seconds()
+            existing.response_time_seconds = int(response_time)
 
-                threshold = 5
-                settings_obj = db.query(SystemSettings).first()
-                if settings_obj:
-                    threshold = settings_obj.sla_threshold_minutes
+            threshold = 5
+            settings_obj = db.query(SystemSettings).first()
+            if settings_obj:
+                threshold = settings_obj.sla_threshold_minutes
 
-                if response_time <= threshold * 60:
-                    existing.sla_status = SLAStatus.COMPLIANT
-                else:
-                    existing.sla_status = SLAStatus.DELAYED
+            if response_time <= threshold * 60:
+                existing.sla_status = SLAStatus.COMPLIANT
+            else:
+                existing.sla_status = SLAStatus.DELAYED
 
             db.commit()
             return
@@ -264,10 +271,11 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         if existing:
             existing.message_count = (existing.message_count or 0) + 1
             existing.message_timestamp = message_time
+            existing.last_sender_type = 'customer'
+            existing.sla_status = SLAStatus.PENDING
             if existing.alert_sent:
                 existing.alert_sent = False
                 existing.alert_sent_at = None
-                existing.sla_status = SLAStatus.PENDING
                 log_event("info", "webhook", f"Reset alert for conversation {existing.id}, sender {sender_id[:20]}")
             db.commit()
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
@@ -283,6 +291,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             message_content=message_text,
             message_timestamp=message_time,
             is_open=True,
+            last_sender_type='customer',
             sla_status=SLAStatus.PENDING,
             message_count=1,
         )

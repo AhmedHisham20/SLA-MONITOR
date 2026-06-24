@@ -59,9 +59,11 @@ async def get_dashboard(
     else:
         total_in_range = base.filter(Conversation.message_timestamp >= today_start).count()
 
-    open_count = base.filter(Conversation.is_open == True).count()
-
-    delayed = base.filter(Conversation.sla_status == SLAStatus.DELAYED).count()
+    awaiting = base.filter(Conversation.last_sender_type == 'customer').count()
+    awaiting_delayed = base.filter(
+        Conversation.last_sender_type == 'customer',
+        Conversation.sla_status == SLAStatus.DELAYED,
+    ).count()
 
     avg_response = base.filter(
         Conversation.has_human_reply == True,
@@ -69,12 +71,14 @@ async def get_dashboard(
     ).with_entities(func.avg(Conversation.response_time_seconds)).scalar()
     avg_response = int(avg_response) if avg_response else None
 
-    total_convs = base.count()
-    delayed_count = delayed
+    replied = base.filter(Conversation.last_sender_type == 'page').count()
     sla_compliance = 100.0
-    if total_convs > 0:
-        compliant = total_convs - delayed_count
-        sla_compliance = round((compliant / total_convs) * 100, 2)
+    if replied > 0:
+        on_time = base.filter(
+            Conversation.last_sender_type == 'page',
+            Conversation.sla_status == SLAStatus.COMPLIANT,
+        ).count()
+        sla_compliance = round((on_time / replied) * 100, 2)
 
     base_pages = db.query(FacebookPage).filter(FacebookPage.monitoring_enabled == True)
     if page_id:
@@ -114,13 +118,14 @@ async def get_dashboard(
             sla_status=c.sla_status.value if c.sla_status else "pending",
             delay_level=c.delay_level.value if c.delay_level else "none",
             is_open=c.is_open,
+            is_awaiting_reply=(c.last_sender_type == 'customer'),
             conversation_link=c.conversation_link,
         ))
 
     stats = DashboardStats(
         total_conversations_today=total_in_range,
-        open_conversations=open_count,
-        delayed_conversations=delayed_count,
+        open_conversations=awaiting,
+        delayed_conversations=awaiting_delayed,
         average_response_time_seconds=avg_response,
         sla_compliance_percent=sla_compliance,
         total_alerts_sent=alerts_count,

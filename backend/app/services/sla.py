@@ -23,17 +23,7 @@ def check_and_update_sla(
     now = datetime.now(timezone.utc)
     elapsed = (now - conversation.message_timestamp).total_seconds() / 60
 
-    if conversation.has_human_reply and conversation.first_reply_timestamp:
-        response_time = (conversation.first_reply_timestamp - conversation.message_timestamp).total_seconds()
-        conversation.response_time_seconds = int(response_time)
-        if response_time <= threshold * 60:
-            conversation.sla_status = SLAStatus.COMPLIANT
-            conversation.delay_level = DelayLevel.NONE
-        else:
-            conversation.sla_status = SLAStatus.DELAYED
-            determine_delay_level(conversation, elapsed, settings_obj)
-        conversation.is_open = False
-        db.commit()
+    if conversation.last_sender_type == 'page':
         return False, None
 
     if elapsed >= threshold and not conversation.alert_sent:

@@ -14,6 +14,7 @@ class SystemSettingsResponse(BaseModel):
     daily_summary_time: str
     weekly_summary_enabled: bool
     whatsapp_phone_number_id: Optional[str] = None
+    whatsapp_access_token: Optional[str] = None
     whatsapp_recipient_number: Optional[str] = None
     facebook_verify_token: Optional[str] = None
     facebook_access_token: Optional[str] = None

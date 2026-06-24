@@ -57,6 +57,4 @@ class Conversation(Base):
     def waiting_minutes(self) -> int:
         if self.last_sender_type == 'page':
             return 0
-        if self.first_reply_timestamp:
-            return int((self.first_reply_timestamp - self.message_timestamp).total_seconds() / 60)
         return int((datetime.now(timezone.utc) - self.message_timestamp).total_seconds() / 60)

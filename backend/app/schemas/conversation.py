@@ -11,7 +11,6 @@ class ConversationResponse(BaseModel):
     customer_id: str
     customer_name: Optional[str] = None
     moderator_name: Optional[str] = None
-    message_content: Optional[str] = None
     message_timestamp: datetime
     first_reply_timestamp: Optional[datetime] = None
     response_time_seconds: Optional[int] = None

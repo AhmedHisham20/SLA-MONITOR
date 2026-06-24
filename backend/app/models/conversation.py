@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text, Float, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 import enum
@@ -29,7 +29,6 @@ class Conversation(Base):
     customer_id = Column(String, nullable=False, index=True)
     customer_name = Column(String, nullable=True)
     moderator_name = Column(String, nullable=True)
-    message_content = Column(Text, nullable=True)
     message_timestamp = Column(DateTime(timezone=True), nullable=False)
     first_reply_timestamp = Column(DateTime(timezone=True), nullable=True)
     response_time_seconds = Column(Integer, nullable=True)

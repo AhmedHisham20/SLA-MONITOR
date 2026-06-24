@@ -92,10 +92,6 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             or f"conv_{msg.get('message_id', 'unknown')}"
         )
 
-        message_text = ""
-        if "message" in msg:
-            message_text = msg["message"].get("text", "") if isinstance(msg["message"], dict) else str(msg["message"])
-
         timestamp = msg.get("timestamp", msg.get("created_time"))
         if isinstance(timestamp, (int, float)):
             message_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
@@ -169,7 +165,6 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             conversation_id=conversation_id,
             customer_id=sender_id,
             customer_name=sender_name or None,
-            message_content=message_text,
             message_timestamp=message_time,
             is_open=True,
             last_sender_type='customer',
@@ -209,8 +204,6 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 page.is_connected = True
             page.last_webhook_activity = datetime.now(timezone.utc)
             db.commit()
-
-        message_text = message_data.get("text", "") or ""
 
         timestamp = msg.get("timestamp", 0)
         if isinstance(timestamp, (int, float)):
@@ -288,7 +281,6 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             conversation_id=new_conv_id,
             customer_id=sender_id,
             customer_name=sender_name or None,
-            message_content=message_text,
             message_timestamp=message_time,
             is_open=True,
             last_sender_type='customer',

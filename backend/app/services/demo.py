@@ -134,7 +134,6 @@ def seed_demo_data(db: Session):
                 customer_id=customer[0],
                 customer_name=customer[1],
                 moderator_name=moderator if has_human else None,
-                message_content=f"Demo customer inquiry #{_} about product support",
                 message_timestamp=msg_time,
                 first_reply_timestamp=first_reply,
                 response_time_seconds=response_time,

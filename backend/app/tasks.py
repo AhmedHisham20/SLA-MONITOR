@@ -4,8 +4,7 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.settings import SystemSettings
-from app.models.conversation import Conversation, SLAStatus
-from app.models.alert import Alert
+from app.models.conversation import Conversation
 from app.services.report import get_report_metrics, format_duration
 from app.services.whatsapp import send_whatsapp_message, build_daily_summary
 from app.services.sla import check_and_update_sla
@@ -23,9 +22,10 @@ async def check_pending_sla():
         pending_convs = db.query(Conversation).join(
             FacebookPage, Conversation.page_id == FacebookPage.page_id
         ).filter(
-            Conversation.sla_status == SLAStatus.PENDING,
             Conversation.is_open == True,
             FacebookPage.monitoring_enabled == True,
+            Conversation.alert_sent == False,
+            Conversation.last_sender_type == 'customer',
         ).all()
 
         for conv in pending_convs:

@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react'
 import { conversations, settings } from '../services/api'
 import { ExternalLink, Clock, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react'
 
+const periods = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7days', label: 'Last 7 Days' },
+  { value: '30days', label: 'Last 30 Days' },
+  { value: 'all', label: 'All Time' },
+]
+
 const statusConfig = {
   delayed: { label: 'Delayed', icon: AlertTriangle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
   pending: { label: 'Pending', icon: Clock, bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-700' },
@@ -9,7 +17,7 @@ const statusConfig = {
 }
 
 export default function SlaStatus() {
-  const [filters, setFilters] = useState({ period: 'today', page: 1, sla_status: '' })
+  const [filters, setFilters] = useState({ period: 'all', page: 1, sla_status: '' })
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [pages, setPages] = useState([])
@@ -70,6 +78,22 @@ export default function SlaStatus() {
             <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {periods.map((p) => (
+          <button
+            key={p.value}
+            onClick={() => setFilters((f) => ({ ...f, period: p.value, page: 1 }))}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filters.period === p.value
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2 mb-6 flex-wrap">

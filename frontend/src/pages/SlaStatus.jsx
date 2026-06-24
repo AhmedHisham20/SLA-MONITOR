@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { conversations, settings } from '../services/api'
-import { ExternalLink, Clock, AlertTriangle, CheckCircle, RefreshCw, Users } from 'lucide-react'
+import { ExternalLink, Clock, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react'
 
 const statusConfig = {
   delayed: { label: 'Delayed', icon: AlertTriangle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
@@ -9,11 +9,13 @@ const statusConfig = {
 }
 
 export default function SlaStatus() {
-  const [filters, setFilters] = useState({ period: 'today', page: 1 })
+  const [filters, setFilters] = useState({ period: 'today', page: 1, sla_status: '' })
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [pages, setPages] = useState([])
   const [activeSection, setActiveSection] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -25,6 +27,9 @@ export default function SlaStatus() {
     setLoading(true)
     try {
       const params = { ...filters }
+      if (!params.sla_status) delete params.sla_status
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
       const res = await conversations.list(params)
       setData(res)
     } catch {
@@ -34,7 +39,7 @@ export default function SlaStatus() {
     }
   }
 
-  useEffect(() => { fetchData() }, [filters])
+  useEffect(() => { fetchData() }, [filters, dateFrom, dateTo])
 
   const groups = { delayed: [], pending: [], compliant: [] }
   data.items.forEach((c) => {
@@ -59,13 +64,15 @@ export default function SlaStatus() {
               <option key={p.page_id} value={p.page_id}>{p.page_name}</option>
             ))}
           </select>
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input text-sm w-auto" title="From date" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input text-sm w-auto" title="To date" />
           <button onClick={fetchData} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Refresh">
             <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
         {['all', ...orderedSections].map((key) => {
           const cfg = statusConfig[key]
           const count = key === 'all' ? data.items.length : (groups[key]?.length || 0)

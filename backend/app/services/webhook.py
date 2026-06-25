@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.conversation import Conversation, SLAStatus
 from app.models.page import FacebookPage
 from app.models.settings import SystemSettings
+from app.models.message_event import MessageEvent
 from app.core.logging import logger
 from app.services.sla import check_and_update_sla, is_automated_message
 
@@ -24,6 +25,33 @@ def _append_unanswered(conv: Conversation, text: str):
 def _clear_unanswered(conv: Conversation):
     conv.unanswered_texts = json.dumps([])
     conv.unanswered_count = 0
+
+
+def _create_message_event(conv: Conversation, message_text: str, received_at: datetime, db: Session):
+    event = MessageEvent(
+        conversation_id=conv.id,
+        customer_id=conv.customer_id,
+        page_id=conv.page_id,
+        message_text=message_text or None,
+        received_at=received_at,
+    )
+    db.add(event)
+    return event
+
+
+def _close_pending_events(conv: Conversation, replied_at: datetime, moderator_name: str, threshold_seconds: int, db: Session):
+    pending = db.query(MessageEvent).filter(
+        MessageEvent.conversation_id == conv.id,
+        MessageEvent.replied_at == None,
+    ).all()
+    for event in pending:
+        event.replied_at = replied_at
+        response_seconds = int((replied_at - event.received_at).total_seconds())
+        event.response_time_seconds = max(response_seconds, 0)
+        event.sla_exceeded = response_seconds > threshold_seconds
+        event.moderator_name = moderator_name or None
+    if pending:
+        db.commit()
 
 
 async def process_webhook_event(entry: dict, db: Session):
@@ -177,6 +205,13 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     db.commit()
                     return
 
+                threshold = 5
+                settings_obj = db.query(SystemSettings).first()
+                if settings_obj:
+                    threshold = settings_obj.sla_threshold_minutes
+
+                _close_pending_events(existing, message_time, sender_name, threshold * 60, db)
+
                 existing.last_sender_type = 'page'
                 existing.has_human_reply = True
                 existing.moderator_name = sender_name or existing.moderator_name
@@ -185,17 +220,13 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     response_time = (message_time - existing.message_timestamp).total_seconds()
                     existing.response_time_seconds = int(response_time)
 
-                    threshold = 5
-                    settings_obj = db.query(SystemSettings).first()
-                    if settings_obj:
-                        threshold = settings_obj.sla_threshold_minutes
-
                     if response_time <= threshold * 60:
                         existing.sla_status = SLAStatus.COMPLIANT
                     else:
                         existing.sla_status = SLAStatus.DELAYED
             else:
                 _append_unanswered(existing, message_text)
+                _create_message_event(existing, message_text, message_time, db)
                 existing.message_timestamp = message_time
                 existing.last_sender_type = 'customer'
                 existing.sla_status = SLAStatus.PENDING
@@ -225,6 +256,9 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             unanswered_texts=json.dumps(texts),
         )
         db.add(conversation)
+        db.commit()
+
+        _create_message_event(conversation, message_text, message_time, db)
         db.commit()
 
         check_and_update_sla(conversation, db)
@@ -291,6 +325,14 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 return
 
             _clear_unanswered(existing)
+
+            threshold = 5
+            settings_obj = db.query(SystemSettings).first()
+            if settings_obj:
+                threshold = settings_obj.sla_threshold_minutes
+
+            _close_pending_events(existing, message_time, sender_name, threshold * 60, db)
+
             existing.last_sender_type = 'page'
             existing.has_human_reply = True
             existing.moderator_name = sender_name or existing.moderator_name
@@ -299,11 +341,6 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 existing.first_reply_timestamp = message_time
             response_time = (message_time - existing.message_timestamp).total_seconds()
             existing.response_time_seconds = int(response_time)
-
-            threshold = 5
-            settings_obj = db.query(SystemSettings).first()
-            if settings_obj:
-                threshold = settings_obj.sla_threshold_minutes
 
             if response_time <= threshold * 60:
                 existing.sla_status = SLAStatus.COMPLIANT
@@ -322,6 +359,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         if existing:
             existing.message_count = (existing.message_count or 0) + 1
             _append_unanswered(existing, message_text)
+            _create_message_event(existing, message_text, message_time, db)
             existing.message_timestamp = message_time
             existing.message_content = message_text
             existing.last_sender_type = 'customer'
@@ -352,6 +390,9 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             unanswered_texts=json.dumps(texts),
         )
         db.add(conversation)
+        db.commit()
+
+        _create_message_event(conversation, message_text, message_time, db)
         db.commit()
 
         log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")

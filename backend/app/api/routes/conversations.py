@@ -5,7 +5,12 @@ from sqlalchemy import func
 from app.db.session import get_db
 from app.models.conversation import Conversation, SLAStatus, DelayLevel
 from app.models.page import FacebookPage
-from app.schemas.conversation import ConversationResponse, ConversationListResponse, ConversationFilter
+from app.models.message_event import MessageEvent
+from app.schemas.conversation import (
+    ConversationResponse,
+    ConversationListResponse,
+    MessageEventResponse,
+)
 from app.api.deps import get_current_user
 from app.models.user import User
 
@@ -85,6 +90,15 @@ def list_conversations(
         (page - 1) * page_size
     ).limit(page_size).all()
 
+    conv_ids = [c.id for c in items]
+    violation_conv_ids = set()
+    if conv_ids:
+        rows = db.query(MessageEvent.conversation_id).filter(
+            MessageEvent.conversation_id.in_(conv_ids),
+            MessageEvent.sla_exceeded == True,
+        ).distinct().all()
+        violation_conv_ids = {r[0] for r in rows}
+
     result_items = []
     for c in items:
         page_obj = db.query(FacebookPage).filter(FacebookPage.page_id == c.page_id).first()
@@ -92,6 +106,10 @@ def list_conversations(
         conv_resp.page_name = page_obj.page_name if page_obj else None
         conv_resp.waiting_minutes = c.waiting_minutes
         conv_resp.conversation_link = c.conversation_link
+        conv_resp.has_sla_violation = (
+            c.id in violation_conv_ids
+            or (c.last_sender_type == 'customer' and c.sla_status == SLAStatus.DELAYED)
+        )
         result_items.append(conv_resp)
 
     return ConversationListResponse(
@@ -103,7 +121,12 @@ def list_conversations(
 
 
 @router.get("/{conversation_id}", response_model=ConversationResponse)
-def get_conversation(conversation_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get_conversation(
+    conversation_id: str,
+    include_events: bool = Query(True, description="Include message events"),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     c = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -112,6 +135,15 @@ def get_conversation(conversation_id: str, db: Session = Depends(get_db), user: 
     conv_resp.page_name = page_obj.page_name if page_obj else None
     conv_resp.waiting_minutes = c.waiting_minutes
     conv_resp.conversation_link = c.conversation_link
+    if include_events:
+        events = db.query(MessageEvent).filter(
+            MessageEvent.conversation_id == c.id,
+        ).order_by(MessageEvent.received_at.asc()).all()
+        conv_resp.message_events = [MessageEventResponse.model_validate(e) for e in events]
+        conv_resp.has_sla_violation = (
+            any(e.sla_exceeded for e in events)
+            or (c.last_sender_type == 'customer' and c.sla_status == SLAStatus.DELAYED)
+        )
     return conv_resp
 
 

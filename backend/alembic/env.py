@@ -2,7 +2,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.db.session import Base
-from app.models import user, conversation, page, alert, settings
+from app.models import user, conversation, page, alert, settings, message_event
 
 config = context.config
 if config.config_file_name is not None:

@@ -3,6 +3,19 @@ from typing import Optional, List
 from datetime import datetime
 
 
+class MessageEventResponse(BaseModel):
+    id: str
+    message_text: Optional[str] = None
+    received_at: datetime
+    replied_at: Optional[datetime] = None
+    response_time_seconds: Optional[int] = None
+    sla_exceeded: bool = False
+    moderator_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class ConversationResponse(BaseModel):
     id: str
     page_id: str
@@ -28,6 +41,8 @@ class ConversationResponse(BaseModel):
     conversation_link: str = ""
     is_working_hours: bool = True
     created_at: datetime
+    message_events: List[MessageEventResponse] = []
+    has_sla_violation: bool = False
 
     class Config:
         from_attributes = True

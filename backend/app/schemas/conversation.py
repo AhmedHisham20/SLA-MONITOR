@@ -43,6 +43,7 @@ class ConversationResponse(BaseModel):
     created_at: datetime
     message_events: List[MessageEventResponse] = []
     has_sla_violation: bool = False
+    reviewed_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

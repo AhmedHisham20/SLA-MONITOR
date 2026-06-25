@@ -120,6 +120,20 @@ def list_conversations(
     )
 
 
+@router.patch("/{conversation_id}/review")
+def review_conversation(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    c = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    c.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"status": "reviewed", "id": conversation_id}
+
+
 @router.get("/{conversation_id}", response_model=ConversationResponse)
 def get_conversation(
     conversation_id: str,

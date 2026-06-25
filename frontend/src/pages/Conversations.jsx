@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { conversations, settings } from '../services/api'
 import {
   ExternalLink, MessageSquare, CheckCircle, Clock, AlertTriangle,
-  ChevronDown, ChevronRight, User, Bot, Timer, XCircle, ShieldCheck,
+  ChevronDown, ChevronRight, User, Bot, Timer, XCircle, ShieldCheck, Eye,
 } from 'lucide-react'
 
 const periods = [
@@ -20,7 +20,7 @@ const statusTabs = [
   { value: 'delayed', label: 'Delayed' },
 ]
 
-function StatusBadge({ status, lastSenderType, waitingMinutes }) {
+function StatusBadge({ status, lastSenderType, waitingMinutes, reviewedAt }) {
   if (lastSenderType === 'page') {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">
@@ -30,11 +30,15 @@ function StatusBadge({ status, lastSenderType, waitingMinutes }) {
     )
   }
   if (status === 'delayed') {
+    const isReviewed = !!reviewedAt
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border-2 border-red-400 shadow-sm animate-pulse">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border-2 border-red-400 shadow-sm">
         <AlertTriangle className="w-4 h-4" />
         DELAYED
         {waitingMinutes > 0 && <span> · {waitingMinutes}m</span>}
+        {isReviewed && (
+          <span className="ml-1 inline-flex items-center gap-1 text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded-full">REVIEWED</span>
+        )}
       </span>
     )
   }
@@ -96,6 +100,7 @@ export default function Conversations() {
   const [expanded, setExpanded] = useState({})
   const [counts, setCounts] = useState({ all: 0, responded: 0, pending: 0, delayed: 0 })
   const [detailEvents, setDetailEvents] = useState({})
+  const [reviewing, setReviewing] = useState({})
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -139,8 +144,8 @@ export default function Conversations() {
     list.sort((a, b) => {
       const la = a.items[a.items.length - 1]
       const lb = b.items[b.items.length - 1]
-      const ra = la.last_sender_type === 'page' ? 2 : la.sla_status === 'delayed' ? 0 : 1
-      const rb = lb.last_sender_type === 'page' ? 2 : lb.sla_status === 'delayed' ? 0 : 1
+      const ra = la.last_sender_type === 'page' ? 3 : la.sla_status === 'delayed' ? (la.reviewed_at ? 1 : 0) : 2
+      const rb = lb.last_sender_type === 'page' ? 3 : lb.sla_status === 'delayed' ? (lb.reviewed_at ? 1 : 0) : 2
       if (ra !== rb) return ra - rb
       return new Date(lb.message_timestamp) - new Date(la.message_timestamp)
     })
@@ -163,6 +168,20 @@ export default function Conversations() {
     if (!expanded[key] && conversationId) {
       loadEvents(conversationId)
     }
+  }
+
+  const handleReview = async (conversationId, customerKey) => {
+    setReviewing((r) => ({ ...r, [conversationId]: true }))
+    try {
+      await conversations.review(conversationId)
+      setData((prev) => ({
+        ...prev,
+        items: prev.items.map((c) =>
+          c.id === conversationId ? { ...c, reviewed_at: new Date().toISOString() } : c
+        ),
+      }))
+    } catch {}
+    setReviewing((r) => ({ ...r, [conversationId]: false }))
   }
 
   return (
@@ -233,26 +252,30 @@ export default function Conversations() {
             const latest = group.items[group.items.length - 1]
             const convLink = latest.conversation_link
             const isDelayed = latest.last_sender_type === 'customer' && latest.sla_status === 'delayed'
-            const isPending = latest.last_sender_type === 'customer' && latest.sla_status !== 'delayed'
+            const isReviewed = !!latest.reviewed_at
+            const isUnreviewedDelayed = isDelayed && !isReviewed
             const hasViolation = latest.has_sla_violation || isDelayed
-            const isGreen = !hasViolation
+            const cardRing = isUnreviewedDelayed
+              ? 'ring-2 ring-red-500 shadow-lg shadow-red-200 border-red-400'
+              : isDelayed
+                ? 'ring-2 ring-red-300 shadow-md shadow-red-100 border-red-200'
+                : 'ring-2 ring-green-400 shadow-lg shadow-green-100 border-green-300'
+            const cardBg = isUnreviewedDelayed
+              ? 'bg-gradient-to-r from-red-50 to-white'
+              : isDelayed
+                ? 'bg-gradient-to-r from-red-50/60 to-white'
+                : 'bg-gradient-to-r from-green-50 to-white'
+            const iconBg = isUnreviewedDelayed ? 'bg-red-100' : isDelayed ? 'bg-red-50' : 'bg-green-100'
+            const iconColor = isUnreviewedDelayed ? 'text-red-500' : isDelayed ? 'text-red-400' : 'text-green-500'
             return (
               <div
                 key={group.customer_id}
-                className={`card p-0 overflow-hidden transition-all duration-200 ${
-                  hasViolation
-                    ? 'ring-2 ring-red-400 shadow-lg shadow-red-100 border-red-300'
-                    : 'ring-2 ring-green-400 shadow-lg shadow-green-100 border-green-300'
-                }`}
+                className={`card p-0 overflow-hidden transition-all duration-200 ${cardRing}`}
               >
-                <div className={`px-5 py-4 ${hasViolation ? 'bg-gradient-to-r from-red-50 to-white' : 'bg-gradient-to-r from-green-50 to-white'}`}>
+                <div className={`px-5 py-4 ${cardBg}`}>
                   <div className="flex items-start gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      hasViolation ? 'bg-red-100' : 'bg-green-100'
-                    }`}>
-                      <MessageSquare className={`w-5 h-5 ${
-                        hasViolation ? 'text-red-500' : 'text-green-500'
-                      }`} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+                      <MessageSquare className={`w-5 h-5 ${iconColor}`} />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -265,6 +288,7 @@ export default function Conversations() {
                           status={latest.sla_status}
                           lastSenderType={latest.last_sender_type}
                           waitingMinutes={latest.waiting_minutes}
+                          reviewedAt={latest.reviewed_at}
                         />
                       </div>
 
@@ -288,6 +312,16 @@ export default function Conversations() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {isUnreviewedDelayed && (
+                        <button
+                          onClick={() => handleReview(latest.id, group.customer_id)}
+                          disabled={reviewing[latest.id]}
+                          className="inline-flex items-center gap-1.5 text-orange-600 hover:text-orange-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-orange-50 transition-colors border border-orange-200 disabled:opacity-50"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          {reviewing[latest.id] ? '...' : 'Reviewed'}
+                        </button>
+                      )}
                       <a
                         href={convLink}
                         target="_blank"

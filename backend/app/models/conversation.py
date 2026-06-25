@@ -46,6 +46,7 @@ class Conversation(Base):
     has_automated_reply = Column(Boolean, default=False)
     automated_message_count = Column(Integer, default=0)
     message_count = Column(Integer, default=0)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

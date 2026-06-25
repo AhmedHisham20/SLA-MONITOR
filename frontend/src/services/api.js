@@ -60,6 +60,7 @@ export const conversations = {
   get: (id) => api.get(`/conversations/${id}`).then((r) => r.data),
   pageStats: () => api.get('/conversations/stats/pages').then((r) => r.data),
   statusCounts: (params) => api.get('/conversations/stats/status-counts', { params }).then((r) => r.data),
+  review: (id) => api.patch(`/conversations/${id}/review`).then((r) => r.data),
 }
 
 export const reports = {

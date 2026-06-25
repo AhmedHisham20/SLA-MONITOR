@@ -71,11 +71,11 @@ async def get_dashboard(
     ).with_entities(func.avg(Conversation.response_time_seconds)).scalar()
     avg_response = int(avg_response) if avg_response else None
 
-    replied = base.filter(Conversation.last_sender_type == 'page').count()
+    replied = base.filter(Conversation.has_human_reply == True).count()
     sla_compliance = 100.0
     if replied > 0:
         on_time = base.filter(
-            Conversation.last_sender_type == 'page',
+            Conversation.has_human_reply == True,
             Conversation.sla_status == SLAStatus.COMPLIANT,
         ).count()
         sla_compliance = round((on_time / replied) * 100, 2)
@@ -118,6 +118,7 @@ async def get_dashboard(
             sla_status=c.sla_status.value if c.sla_status else "pending",
             delay_level=c.delay_level.value if c.delay_level else "none",
             is_open=c.is_open,
+            last_sender_type=c.last_sender_type or 'customer',
             is_awaiting_reply=(c.last_sender_type == 'customer'),
             conversation_link=c.conversation_link,
         ))

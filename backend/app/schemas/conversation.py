@@ -8,7 +8,7 @@ class ConversationResponse(BaseModel):
     page_id: str
     page_name: Optional[str] = None
     conversation_id: str
-    customer_id: str
+    customer_id: Optional[str] = None
     customer_name: Optional[str] = None
     moderator_name: Optional[str] = None
     message_content: Optional[str] = None
@@ -21,6 +21,7 @@ class ConversationResponse(BaseModel):
     alert_sent: bool
     has_human_reply: bool = False
     has_automated_reply: bool = False
+    last_sender_type: str = 'customer'
     waiting_minutes: int = 0
     conversation_link: str = ""
     is_working_hours: bool = True

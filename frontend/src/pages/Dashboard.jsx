@@ -10,6 +10,8 @@ import {
   Activity,
   RefreshCw,
   ExternalLink,
+  Bot,
+  User,
 } from 'lucide-react'
 
 const periods = [
@@ -124,7 +126,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         <WidgetCard title={dateFrom || dateTo ? 'Filtered Conversations' : "Today's Conversations"} value={s?.total_conversations_today} icon={MessageSquare} color="blue" loading={loading} />
-        <WidgetCard title="Open Conversations" value={s?.open_conversations} icon={Activity} color="purple" loading={loading} />
+        <WidgetCard title="Awaiting Reply" value={s?.open_conversations} icon={Activity} color="purple" loading={loading} />
         <WidgetCard title="Delayed" value={s?.delayed_conversations} icon={AlertTriangle} color="red" loading={loading} />
         <WidgetCard title="Avg Response Time" value={s?.average_response_time_seconds ? `${Math.floor(s.average_response_time_seconds / 60)}m ${s.average_response_time_seconds % 60}s` : 'N/A'} icon={Clock} color="yellow" loading={loading} />
         <WidgetCard title="SLA Compliance" value={s ? `${s.sla_compliance_percent}%` : null} icon={CheckCircle} color="green" loading={loading} />
@@ -181,17 +183,24 @@ export default function Dashboard() {
                       : '-'}
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      c.sla_status === 'compliant' ? 'bg-green-50 text-green-600' :
-                      c.sla_status === 'delayed' ? 'bg-red-50 text-red-600' :
-                      c.sla_status === 'outside_hours' ? 'bg-gray-50 text-gray-500' :
-                      'bg-yellow-50 text-yellow-600'
-                    }`}>
-                      {c.sla_status === 'delayed' && <AlertTriangle className="w-3 h-3" />}
-                      {c.sla_status === 'compliant' && <CheckCircle className="w-3 h-3" />}
-                      {c.sla_status === 'pending' && <Clock className="w-3 h-3" />}
-                      {c.sla_status?.replace('_', ' ')}
-                    </span>
+                    {c.last_sender_type === 'page' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                        <CheckCircle className="w-3 h-3" />
+                        Responded
+                      </span>
+                    ) : c.sla_status === 'delayed' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                        <AlertTriangle className="w-3 h-3" />
+                        DELAYED
+                        {c.waiting_minutes > 0 && <span>· {c.waiting_minutes}m</span>}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        <Clock className="w-3 h-3" />
+                        Pending Reply
+                        {c.waiting_minutes > 0 && <span>· {c.waiting_minutes}m</span>}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-3">
                     <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">

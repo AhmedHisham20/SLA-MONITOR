@@ -107,12 +107,19 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
         else:
             message_time = datetime.now(timezone.utc)
 
+        is_page_sender = (sender_id == page.page_id)
+
         existing = db.query(Conversation).filter(
             Conversation.conversation_id == conversation_id,
             Conversation.customer_id == sender_id,
         ).first()
 
-        is_page_sender = (sender_id == page.page_id)
+        if not existing and not is_page_sender:
+            existing = db.query(Conversation).filter(
+                Conversation.customer_id == sender_id,
+                Conversation.page_id == page.page_id,
+                Conversation.is_open == True,
+            ).order_by(Conversation.message_timestamp.desc()).first()
 
         if not existing and is_page_sender:
             customer_id = ""
@@ -137,6 +144,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
 
         if existing:
             existing.message_count = (existing.message_count or 0) + 1
+            existing.message_content = message_text
 
             if is_page_sender:
                 is_automated = is_automated_message(msg)
@@ -151,20 +159,22 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                 existing.last_sender_type = 'page'
                 existing.has_human_reply = True
                 existing.moderator_name = sender_name or existing.moderator_name
-                existing.first_reply_timestamp = message_time
-                response_time = (message_time - existing.message_timestamp).total_seconds()
-                existing.response_time_seconds = int(response_time)
+                if not existing.first_reply_timestamp:
+                    existing.first_reply_timestamp = message_time
+                    response_time = (message_time - existing.message_timestamp).total_seconds()
+                    existing.response_time_seconds = int(response_time)
 
-                threshold = 5
-                settings_obj = db.query(SystemSettings).first()
-                if settings_obj:
-                    threshold = settings_obj.sla_threshold_minutes
+                    threshold = 5
+                    settings_obj = db.query(SystemSettings).first()
+                    if settings_obj:
+                        threshold = settings_obj.sla_threshold_minutes
 
-                if response_time <= threshold * 60:
-                    existing.sla_status = SLAStatus.COMPLIANT
-                else:
-                    existing.sla_status = SLAStatus.DELAYED
+                    if response_time <= threshold * 60:
+                        existing.sla_status = SLAStatus.COMPLIANT
+                    else:
+                        existing.sla_status = SLAStatus.DELAYED
             else:
+                existing.message_timestamp = message_time
                 existing.last_sender_type = 'customer'
                 existing.sla_status = SLAStatus.PENDING
                 if existing.alert_sent:
@@ -258,7 +268,9 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             existing.last_sender_type = 'page'
             existing.has_human_reply = True
             existing.moderator_name = sender_name or existing.moderator_name
-            existing.first_reply_timestamp = message_time
+            existing.message_content = message_text
+            if not existing.first_reply_timestamp:
+                existing.first_reply_timestamp = message_time
             response_time = (message_time - existing.message_timestamp).total_seconds()
             existing.response_time_seconds = int(response_time)
 
@@ -284,6 +296,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         if existing:
             existing.message_count = (existing.message_count or 0) + 1
             existing.message_timestamp = message_time
+            existing.message_content = message_text
             existing.last_sender_type = 'customer'
             existing.sla_status = SLAStatus.PENDING
             if existing.alert_sent:

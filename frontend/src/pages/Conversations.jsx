@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { conversations, settings } from '../services/api'
-import { ExternalLink, MessageSquare, CheckCircle, Clock, AlertTriangle, ChevronDown, ChevronRight, User, Bot } from 'lucide-react'
+import {
+  ExternalLink, MessageSquare, CheckCircle, Clock, AlertTriangle,
+  ChevronDown, ChevronRight, User, Bot, MailQuestion,
+} from 'lucide-react'
 
 const periods = [
   { value: 'today', label: 'Today' },
@@ -8,6 +11,13 @@ const periods = [
   { value: '7days', label: 'Last 7 Days' },
   { value: '30days', label: 'Last 30 Days' },
   { value: 'all', label: 'All Time' },
+]
+
+const statusTabs = [
+  { value: '', label: 'All' },
+  { value: 'responded', label: 'Responded' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'delayed', label: 'Delayed' },
 ]
 
 function StatusBadge({ status, lastSenderType, waitingMinutes }) {
@@ -21,10 +31,10 @@ function StatusBadge({ status, lastSenderType, waitingMinutes }) {
   }
   if (status === 'delayed') {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-        <AlertTriangle className="w-3.5 h-3.5" />
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border-2 border-red-300 shadow-sm">
+        <AlertTriangle className="w-4 h-4" />
         DELAYED
-        {waitingMinutes > 0 && <span className="ml-0.5">· {waitingMinutes}m</span>}
+        {waitingMinutes > 0 && <span>· {waitingMinutes}m</span>}
       </span>
     )
   }
@@ -32,8 +42,32 @@ function StatusBadge({ status, lastSenderType, waitingMinutes }) {
     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
       <Clock className="w-3.5 h-3.5" />
       Pending Reply
-      {waitingMinutes > 0 && <span className="ml-0.5">· {waitingMinutes}m</span>}
+      {waitingMinutes > 0 && <span>· {waitingMinutes}m</span>}
     </span>
+  )
+}
+
+function UnansweredMessages({ texts }) {
+  let items = []
+  try {
+    items = texts ? JSON.parse(texts) : []
+  } catch { items = [] }
+  if (items.length === 0) return null
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <div className="flex items-center gap-1.5 mb-2">
+        <MailQuestion className="w-3.5 h-3.5 text-gray-400" />
+        <span className="text-xs font-medium text-gray-500">Unanswered Messages ({items.length})</span>
+      </div>
+      <div className="space-y-1.5">
+        {items.map((t, i) => (
+          <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
+            <span className="text-gray-300 mt-0.5">•</span>
+            <span className="flex-1 whitespace-pre-wrap break-words">{t || <span className="italic text-gray-400">(media or unsupported)</span>}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -42,7 +76,9 @@ export default function Conversations() {
   const [loading, setLoading] = useState(true)
   const [pages, setPages] = useState([])
   const [filters, setFilters] = useState({ period: 'today', page: 1 })
+  const [statusFilter, setStatusFilter] = useState('')
   const [expanded, setExpanded] = useState({})
+  const [counts, setCounts] = useState({ all: 0, responded: 0, pending: 0, delayed: 0 })
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -50,18 +86,33 @@ export default function Conversations() {
     }).catch(() => {})
   }, [])
 
+  const fetchCounts = async () => {
+    try {
+      const params = { period: filters.period }
+      if (filters.page_id) params.page_id = filters.page_id
+      const res = await conversations.statusCounts(params)
+      setCounts(res)
+    } catch {}
+  }
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await conversations.list(filters)
-      setData(res)
+      const params = { ...filters }
+      if (statusFilter) params.status = statusFilter
+      const [convRes, countRes] = await Promise.all([
+        conversations.list(params),
+        conversations.statusCounts({ period: filters.period, page_id: filters.page_id || undefined }),
+      ])
+      setData(convRes)
+      setCounts(countRes)
     } catch {
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchData() }, [filters])
+  useEffect(() => { fetchData() }, [filters, statusFilter])
 
   const groups = {}
   data.items.forEach((c) => {
@@ -83,7 +134,7 @@ export default function Conversations() {
         <h1 className="text-2xl font-bold text-gray-900">Conversations</h1>
         <select
           value={filters.page_id || ''}
-          onChange={(e) => setFilters((f) => ({ ...f, page_id: e.target.value || undefined, page: 1 }))}
+          onChange={(e) => { setFilters((f) => ({ ...f, page_id: e.target.value || undefined, page: 1 })); setStatusFilter('') }}
           className="input text-sm w-auto"
         >
           <option value="">All Monitored Pages</option>
@@ -93,11 +144,11 @@ export default function Conversations() {
         </select>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {periods.map((p) => (
           <button
             key={p.value}
-            onClick={() => setFilters((f) => ({ ...f, period: p.value, page: 1 }))}
+            onClick={() => { setFilters((f) => ({ ...f, period: p.value, page: 1 })); setStatusFilter('') }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filters.period === p.value
                 ? 'bg-blue-600 text-white'
@@ -109,6 +160,34 @@ export default function Conversations() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        {statusTabs.map((t) => {
+          const countKey = t.value || 'all'
+          const count = counts[countKey] ?? 0
+          const isActive = statusFilter === t.value
+          return (
+            <button
+              key={t.value}
+              onClick={() => { setStatusFilter(t.value); setFilters((f) => ({ ...f, page: 1 })) }}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? t.value === 'delayed' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {t.label}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                isActive
+                  ? 'bg-white/20 text-white'
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
       {loading ? (
         <div className="text-center py-12 text-gray-400">Loading...</div>
       ) : (
@@ -117,19 +196,29 @@ export default function Conversations() {
             const latest = group.items[group.items.length - 1]
             const convLink = latest.conversation_link
             const isExpanded = expanded[group.customer_id]
+            const isDelayed = latest.last_sender_type === 'customer' && latest.sla_status === 'delayed'
             return (
-              <div key={group.customer_id} className="card p-0 overflow-hidden">
+              <div
+                key={group.customer_id}
+                className={`card p-0 overflow-hidden transition-shadow ${
+                  isDelayed ? 'ring-2 ring-red-300 shadow-lg shadow-red-100' : ''
+                }`}
+              >
                 <button
                   onClick={() => setExpanded((e) => ({ ...e, [group.customer_id]: !e[group.customer_id] }))}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-5 py-4 transition-colors text-left ${
+                    isDelayed ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
+                  }`}
                 >
                   {isExpanded ? (
                     <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   ) : (
                     <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   )}
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-4 h-4 text-gray-500" />
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    isDelayed ? 'bg-red-100' : 'bg-gray-100'
+                  }`}>
+                    <MessageSquare className={`w-4 h-4 ${isDelayed ? 'text-red-500' : 'text-gray-500'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -141,8 +230,14 @@ export default function Conversations() {
                         waitingMinutes={latest.waiting_minutes}
                       />
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {group.items.length} session{group.items.length > 1 ? 's' : ''} · Last message {new Date(latest.message_timestamp).toLocaleString()}
+                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                      <span>{group.items.length} session{group.items.length > 1 ? 's' : ''}</span>
+                      {latest.unanswered_count > 0 && (
+                        <span className="font-medium text-amber-600">
+                          {latest.unanswered_count} unanswered
+                        </span>
+                      )}
+                      <span>· {new Date(latest.message_timestamp).toLocaleString()}</span>
                     </div>
                   </div>
                   <a
@@ -194,6 +289,9 @@ export default function Conversations() {
                                   <p className="text-sm whitespace-pre-wrap break-words">
                                     {c.message_content || (isCustomer ? 'Sent a message' : 'Replied')}
                                   </p>
+                                  {isCustomer && c.unanswered_count > 0 && (
+                                    <UnansweredMessages texts={c.unanswered_texts} />
+                                  )}
                                 </div>
                                 <div className={`flex items-center gap-2 mt-1 ${isCustomer ? '' : 'flex-row-reverse'}`}>
                                   <span className="text-[11px] text-gray-400">{new Date(c.message_timestamp).toLocaleString()}</span>

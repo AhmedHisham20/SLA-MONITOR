@@ -119,6 +119,8 @@ async def get_dashboard(
             delay_level=c.delay_level.value if c.delay_level else "none",
             is_open=c.is_open,
             last_sender_type=c.last_sender_type or 'customer',
+            unanswered_count=c.unanswered_count or 0,
+            unanswered_texts=c.unanswered_texts,
             is_awaiting_reply=(c.last_sender_type == 'customer'),
             conversation_link=c.conversation_link,
         ))

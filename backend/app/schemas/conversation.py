@@ -22,6 +22,8 @@ class ConversationResponse(BaseModel):
     has_human_reply: bool = False
     has_automated_reply: bool = False
     last_sender_type: str = 'customer'
+    unanswered_count: int = 0
+    unanswered_texts: Optional[str] = None
     waiting_minutes: int = 0
     conversation_link: str = ""
     is_working_hours: bool = True

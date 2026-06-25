@@ -59,6 +59,7 @@ export const conversations = {
   list: (params) => api.get('/conversations', { params }).then((r) => r.data),
   get: (id) => api.get(`/conversations/${id}`).then((r) => r.data),
   pageStats: () => api.get('/conversations/stats/pages').then((r) => r.data),
+  statusCounts: (params) => api.get('/conversations/stats/status-counts', { params }).then((r) => r.data),
 }
 
 export const reports = {

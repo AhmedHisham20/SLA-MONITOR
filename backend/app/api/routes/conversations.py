@@ -18,7 +18,9 @@ def list_conversations(
     page_size: int = Query(20, ge=1, le=100),
     period: str = Query(None),
     page_id: str = Query(None),
+    status: str = Query(None),
     sla_status: str = Query(None),
+    last_sender_type: str = Query(None),
     delay_level: str = Query(None),
     is_open: bool = Query(None),
     search: str = Query(None),
@@ -50,8 +52,23 @@ def list_conversations(
 
     if page_id:
         query = query.filter(Conversation.page_id == page_id)
+    if status:
+        if status == 'responded':
+            query = query.filter(Conversation.last_sender_type == 'page')
+        elif status == 'pending':
+            query = query.filter(
+                Conversation.last_sender_type == 'customer',
+                Conversation.sla_status != SLAStatus.DELAYED,
+            )
+        elif status == 'delayed':
+            query = query.filter(
+                Conversation.last_sender_type == 'customer',
+                Conversation.sla_status == SLAStatus.DELAYED,
+            )
     if sla_status:
         query = query.filter(Conversation.sla_status == sla_status)
+    if last_sender_type:
+        query = query.filter(Conversation.last_sender_type == last_sender_type)
     if delay_level:
         query = query.filter(Conversation.delay_level == delay_level)
     if is_open is not None:
@@ -96,6 +113,54 @@ def get_conversation(conversation_id: str, db: Session = Depends(get_db), user: 
     conv_resp.waiting_minutes = c.waiting_minutes
     conv_resp.conversation_link = c.conversation_link
     return conv_resp
+
+
+@router.get("/stats/status-counts")
+def get_status_counts(
+    period: str = Query(None),
+    page_id: str = Query(None),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    query = db.query(Conversation).join(
+        FacebookPage, Conversation.page_id == FacebookPage.page_id
+    ).filter(FacebookPage.monitoring_enabled == True)
+
+    if period and period != "all":
+        now = datetime.now(timezone.utc)
+        if period == "today":
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == "yesterday":
+            start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            query = query.filter(Conversation.message_timestamp >= start, Conversation.message_timestamp < end)
+        elif period == "7days":
+            start = now - timedelta(days=7)
+        elif period == "30days":
+            start = now - timedelta(days=30)
+        if period != "yesterday":
+            query = query.filter(Conversation.message_timestamp >= start)
+
+    if page_id:
+        query = query.filter(Conversation.page_id == page_id)
+
+    all_count = query.count()
+    responded = query.filter(Conversation.last_sender_type == 'page').count()
+    pending = query.filter(
+        Conversation.last_sender_type == 'customer',
+        Conversation.sla_status != SLAStatus.DELAYED,
+    ).count()
+    delayed = query.filter(
+        Conversation.last_sender_type == 'customer',
+        Conversation.sla_status == SLAStatus.DELAYED,
+    ).count()
+
+    return {
+        "all": all_count,
+        "responded": responded,
+        "pending": pending,
+        "delayed": delayed,
+    }
 
 
 @router.get("/stats/pages")

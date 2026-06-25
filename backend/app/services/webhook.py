@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.conversation import Conversation, SLAStatus
@@ -5,6 +6,24 @@ from app.models.page import FacebookPage
 from app.models.settings import SystemSettings
 from app.core.logging import logger
 from app.services.sla import check_and_update_sla, is_automated_message
+
+
+def _append_unanswered(conv: Conversation, text: str):
+    texts = []
+    if conv.unanswered_texts:
+        try:
+            texts = json.loads(conv.unanswered_texts)
+        except (json.JSONDecodeError, TypeError):
+            texts = []
+    if text:
+        texts.append(text)
+    conv.unanswered_texts = json.dumps(texts)
+    conv.unanswered_count = len(texts)
+
+
+def _clear_unanswered(conv: Conversation):
+    conv.unanswered_texts = json.dumps([])
+    conv.unanswered_count = 0
 
 
 async def process_webhook_event(entry: dict, db: Session):
@@ -147,6 +166,8 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             existing.message_content = message_text
 
             if is_page_sender:
+                _clear_unanswered(existing)
+
                 is_automated = is_automated_message(msg)
 
                 if is_automated:
@@ -174,6 +195,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     else:
                         existing.sla_status = SLAStatus.DELAYED
             else:
+                _append_unanswered(existing, message_text)
                 existing.message_timestamp = message_time
                 existing.last_sender_type = 'customer'
                 existing.sla_status = SLAStatus.PENDING
@@ -187,6 +209,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
         if is_page_sender:
             return
 
+        texts = [message_text] if message_text else []
         conversation = Conversation(
             page_id=page.page_id,
             conversation_id=conversation_id,
@@ -198,6 +221,8 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             last_sender_type='customer',
             sla_status=SLAStatus.PENDING,
             message_count=1,
+            unanswered_count=len(texts),
+            unanswered_texts=json.dumps(texts),
         )
         db.add(conversation)
         db.commit()
@@ -265,6 +290,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 db.commit()
                 return
 
+            _clear_unanswered(existing)
             existing.last_sender_type = 'page'
             existing.has_human_reply = True
             existing.moderator_name = sender_name or existing.moderator_name
@@ -295,6 +321,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
 
         if existing:
             existing.message_count = (existing.message_count or 0) + 1
+            _append_unanswered(existing, message_text)
             existing.message_timestamp = message_time
             existing.message_content = message_text
             existing.last_sender_type = 'customer'
@@ -308,6 +335,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             return
 
         new_conv_id = f"conv_{sender_id}_{page_id}_{int(datetime.now(timezone.utc).timestamp())}"
+        texts = [message_text] if message_text else []
 
         conversation = Conversation(
             page_id=page.page_id,
@@ -320,6 +348,8 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             last_sender_type='customer',
             sla_status=SLAStatus.PENDING,
             message_count=1,
+            unanswered_count=len(texts),
+            unanswered_texts=json.dumps(texts),
         )
         db.add(conversation)
         db.commit()

@@ -27,6 +27,8 @@ class RecentConversation(BaseModel):
     delay_level: str
     is_open: bool = True
     last_sender_type: str = 'customer'
+    unanswered_count: int = 0
+    unanswered_texts: Optional[str] = None
     is_awaiting_reply: bool = True
     conversation_link: str = ""
 

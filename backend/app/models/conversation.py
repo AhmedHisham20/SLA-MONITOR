@@ -31,6 +31,8 @@ class Conversation(Base):
     moderator_name = Column(String, nullable=True)
     message_content = Column(Text, nullable=True)
     message_timestamp = Column(DateTime(timezone=True), nullable=False)
+    unanswered_count = Column(Integer, default=0)
+    unanswered_texts = Column(Text, nullable=True)
     first_reply_timestamp = Column(DateTime(timezone=True), nullable=True)
     response_time_seconds = Column(Integer, nullable=True)
     sla_status = Column(SAEnum(SLAStatus), default=SLAStatus.PENDING)

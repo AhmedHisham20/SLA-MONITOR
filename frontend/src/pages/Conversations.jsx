@@ -170,16 +170,14 @@ export default function Conversations() {
     }
   }
 
-  const handleReview = async (conversationId, customerKey) => {
+  const handleReview = async (conversationId) => {
     setReviewing((r) => ({ ...r, [conversationId]: true }))
     try {
       await conversations.review(conversationId)
-      setData((prev) => ({
-        ...prev,
-        items: prev.items.map((c) =>
-          c.id === conversationId ? { ...c, reviewed_at: new Date().toISOString() } : c
-        ),
-      }))
+      const params = { ...filters }
+      if (statusFilter) params.status = statusFilter
+      const convRes = await conversations.list(params)
+      setData(convRes)
     } catch {}
     setReviewing((r) => ({ ...r, [conversationId]: false }))
   }
@@ -314,7 +312,7 @@ export default function Conversations() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {isUnreviewedDelayed && (
                         <button
-                          onClick={() => handleReview(latest.id, group.customer_id)}
+                          onClick={() => handleReview(latest.id)}
                           disabled={reviewing[latest.id]}
                           className="inline-flex items-center gap-1.5 text-orange-600 hover:text-orange-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-orange-50 transition-colors border border-orange-200 disabled:opacity-50"
                         >

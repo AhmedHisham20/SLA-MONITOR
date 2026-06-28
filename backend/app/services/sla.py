@@ -29,6 +29,9 @@ def check_and_update_sla(
         return False, None
 
     if elapsed >= threshold and not conversation.alert_sent:
+        db.refresh(conversation)
+        if conversation.alert_sent:
+            return False, None
         conversation.sla_status = SLAStatus.DELAYED
         determine_delay_level(conversation, elapsed, settings_obj)
 
@@ -45,6 +48,8 @@ def check_and_update_sla(
                     last_msg = texts[-1]
             except (json.JSONDecodeError, TypeError):
                 pass
+        if not last_msg and conversation.message_content:
+            last_msg = conversation.message_content
 
         alert_body = build_delay_alert_sync(
             page_name=page_name,

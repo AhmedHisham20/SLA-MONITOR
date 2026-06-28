@@ -54,6 +54,9 @@ class Conversation(Base):
 
     @property
     def conversation_link(self) -> str:
+        if self.page_id and self.customer_id:
+            thread_id = f"t_{self.page_id}_{self.customer_id}"
+            return f"https://business.facebook.com/latest/inbox/all?selected_item_id={thread_id}"
         return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.customer_id}"
 
     @property

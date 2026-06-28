@@ -49,23 +49,33 @@ def check_and_update_sla(
 
         _flag_pending_events_as_exceeded(conversation.id, db)
 
+        # Use the MessageEvent tied to this SLA breach
+        last_msg = None
+        breach_event = db.query(MessageEvent).filter(
+            MessageEvent.conversation_id == conversation.id,
+            MessageEvent.replied_at == None,
+            MessageEvent.sla_exceeded == True,
+        ).order_by(MessageEvent.received_at.desc()).first()
+        if breach_event and breach_event.message_text:
+            last_msg = breach_event.message_text
+
+        if not last_msg:
+            if conversation.unanswered_texts:
+                try:
+                    texts = json.loads(conversation.unanswered_texts)
+                    if isinstance(texts, list) and texts:
+                        last_msg = texts[-1]
+                    elif isinstance(texts, str) and texts:
+                        last_msg = texts
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if not last_msg and conversation.message_content:
+                last_msg = conversation.message_content
+
         page = db.query(FacebookPage).filter(
             FacebookPage.page_id == conversation.page_id
         ).first()
         page_name = page.page_name if page else conversation.page_id
-
-        last_msg = None
-        if conversation.unanswered_texts:
-            try:
-                texts = json.loads(conversation.unanswered_texts)
-                if isinstance(texts, list) and texts:
-                    last_msg = texts[-1]
-                elif isinstance(texts, str) and texts:
-                    last_msg = texts
-            except (json.JSONDecodeError, TypeError):
-                pass
-        if not last_msg and conversation.message_content:
-            last_msg = conversation.message_content
 
         alert_body = build_delay_alert_sync(
             page_name=page_name,

@@ -56,8 +56,11 @@ class Conversation(Base):
     def conversation_link(self) -> str:
         if not self.customer_id:
             return "https://business.facebook.com/latest/inbox/all"
-        thread_id = f"t_{self.page_id}_{self.customer_id}"
-        return f"https://business.facebook.com/latest/inbox/all?selected_item_id={thread_id}"
+        # Use the actual Facebook conversation ID if available (from webhook)
+        if self.conversation_id and self.conversation_id.startswith("t_"):
+            return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.conversation_id}"
+        # Fallback: construct thread ID from page_id and customer_id
+        return f"https://business.facebook.com/latest/inbox/all?selected_item_id=t_{self.page_id}_{self.customer_id}"
 
     @property
     def waiting_minutes(self) -> int:

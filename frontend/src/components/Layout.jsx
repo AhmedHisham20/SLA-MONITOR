@@ -11,10 +11,12 @@ import {
   X,
   Bell,
   FlaskConical,
+  Monitor,
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/', icon: Monitor, label: 'Home', end: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: false },
   { to: '/conversations', icon: MessageSquare, label: 'Conversations' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/settings', icon: Settings, label: 'Settings' },

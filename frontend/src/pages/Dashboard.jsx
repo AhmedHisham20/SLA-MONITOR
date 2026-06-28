@@ -10,8 +10,6 @@ import {
   Activity,
   RefreshCw,
   ExternalLink,
-  Bot,
-  User,
 } from 'lucide-react'
 
 const periods = [
@@ -41,6 +39,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState('today')
   const [slaStatus, setSlaStatus] = useState('')
   const [convPage, setConvPage] = useState(1)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -66,6 +65,7 @@ export default function Dashboard() {
       ])
       setData(statsRes)
       setConvData(convRes)
+      setLastUpdated(new Date())
     } catch {
       // silently fail
     } finally {
@@ -242,6 +242,13 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="flex justify-end items-center gap-4 mt-4 text-xs text-gray-400">
+        <span>Timezone: Africa/Cairo</span>
+        <span>Last Updated: {lastUpdated
+          ? `${String(lastUpdated.getDate()).padStart(2, '0')}/${String(lastUpdated.getMonth() + 1).padStart(2, '0')}/${lastUpdated.getFullYear()} ${String(lastUpdated.getHours()).padStart(2, '0')}:${String(lastUpdated.getMinutes()).padStart(2, '0')}:${String(lastUpdated.getSeconds()).padStart(2, '0')}`
+          : '-'}</span>
       </div>
     </div>
   )

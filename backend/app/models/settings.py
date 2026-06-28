@@ -9,7 +9,7 @@ class SystemSettings(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     company_name = Column(String, default="SLA Monitor")
-    timezone = Column(String, default="UTC")
+    timezone = Column(String, default="Africa/Cairo")
     working_hours_start = Column(String, default="10:00")
     working_hours_end = Column(String, default="22:00")
     sla_threshold_minutes = Column(Integer, default=5)

@@ -8,6 +8,7 @@ from app.services.report import get_report_metrics, get_report_charts, get_moder
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.core.logging import logger
+from app.core.datetime_utils import today_start_utc, days_ago_start_utc, month_start_utc, now_egypt
 import csv
 import io
 
@@ -15,18 +16,18 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 def _get_date_range(period: str):
-    now = datetime.now(timezone.utc)
+    now = now_egypt().astimezone(timezone.utc)
     if period == "daily":
-        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start = today_start_utc()
         end = now
     elif period == "weekly":
-        start = now - timedelta(days=7)
+        start = days_ago_start_utc(7)
         end = now
     elif period == "monthly":
-        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start = month_start_utc()
         end = now
     else:
-        start = now - timedelta(days=30)
+        start = days_ago_start_utc(30)
         end = now
     return start, end
 
@@ -64,7 +65,7 @@ def moderator_performance(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    end = datetime.now(timezone.utc)
+    end = now_egypt().astimezone(timezone.utc)
     start = end - timedelta(days=days)
     performers = get_moderator_performance(db, start, end)
     return ModeratorPerformanceList(moderators=performers)

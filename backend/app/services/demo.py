@@ -6,6 +6,7 @@ from app.models.conversation import Conversation, SLAStatus, DelayLevel
 from app.models.alert import Alert, AlertType, AlertStatus
 from app.models.settings import SystemSettings
 from app.core.logging import logger
+from app.core.datetime_utils import now_egypt
 
 PAGE_NAMES = [
     ("1001", "Tech Support Hub"),
@@ -77,7 +78,7 @@ def seed_demo_data(db: Session):
         pages.append(page)
     db.commit()
 
-    now = datetime.now(timezone.utc)
+    now = now_egypt()
     all_conversations = []
 
     for day_offset in range(7):

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -10,6 +10,7 @@ from app.schemas.dashboard import DashboardStats, DashboardResponse, RecentConve
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.services.cache import cache_get_json, cache_set_json
+from app.core.datetime_utils import today_start_utc, egypt_date_to_utc
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -28,8 +29,7 @@ async def get_dashboard(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = today_start_utc()
 
     cache_key = f"dashboard:stats:{page_id or 'all'}:{date_from or 'none'}:{date_to or 'none'}"
     cached = await cache_get_json(cache_key)
@@ -42,13 +42,13 @@ async def get_dashboard(
 
     if date_from:
         try:
-            dt_from = datetime.fromisoformat(date_from).replace(tzinfo=timezone.utc)
+            dt_from = egypt_date_to_utc(date_from)
             base = base.filter(Conversation.message_timestamp >= dt_from)
         except ValueError:
             pass
     if date_to:
         try:
-            dt_to = datetime.fromisoformat(date_to).replace(tzinfo=timezone.utc) + timedelta(days=1)
+            dt_to = egypt_date_to_utc(date_to) + timedelta(days=1)
             base = base.filter(Conversation.message_timestamp < dt_to)
         except ValueError:
             pass
@@ -92,12 +92,12 @@ async def get_dashboard(
         recent_query = recent_query.filter(Conversation.page_id == page_id)
     if date_from:
         try:
-            recent_query = recent_query.filter(Conversation.message_timestamp >= datetime.fromisoformat(date_from).replace(tzinfo=timezone.utc))
+            recent_query = recent_query.filter(Conversation.message_timestamp >= egypt_date_to_utc(date_from))
         except ValueError:
             pass
     if date_to:
         try:
-            recent_query = recent_query.filter(Conversation.message_timestamp < datetime.fromisoformat(date_to).replace(tzinfo=timezone.utc) + timedelta(days=1))
+            recent_query = recent_query.filter(Conversation.message_timestamp < egypt_date_to_utc(date_to) + timedelta(days=1))
         except ValueError:
             pass
     recent = recent_query.order_by(Conversation.message_timestamp.desc()).limit(10).all()

@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import Conversations from './pages/Conversations'
 import Reports from './pages/Reports'
@@ -23,7 +24,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/conversations" element={<Conversations />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     SLA_DELAY_THRESHOLD_MINUTES: int = 5
     WORKING_HOURS_START: str = "10:00"
     WORKING_HOURS_END: str = "22:00"
-    WORKING_TIMEZONE: str = "UTC"
+    WORKING_TIMEZONE: str = "Africa/Cairo"
 
     DAILY_SUMMARY_TIME: str = "23:00"
     DAILY_SUMMARY_ENABLED: bool = True
@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     COMPANY_NAME: str = "SLA Monitor"
     DEMO_MODE: bool = False
+    FRONTEND_URL: str = "https://dashboard.ahmedhisham.site"
 
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "https://dashboard.ahmedhisham.site"]
 

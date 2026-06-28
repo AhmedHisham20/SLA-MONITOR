@@ -10,6 +10,7 @@ from app.services.whatsapp import send_whatsapp_message, build_daily_summary
 from app.services.sla import check_and_update_sla
 from app.models.page import FacebookPage
 from app.core.logging import logger
+from app.core.datetime_utils import yesterday_range_utc
 
 scheduler = AsyncIOScheduler()
 
@@ -57,9 +58,7 @@ async def send_daily_summary():
         if not settings_obj or not settings_obj.daily_summary_enabled:
             return
 
-        now = datetime.now(timezone.utc)
-        start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start, end = yesterday_range_utc()
 
         metrics = get_report_metrics(db, start, end)
         avg_time_str = format_duration(metrics.average_response_time_seconds) if metrics.average_response_time_seconds else "N/A"

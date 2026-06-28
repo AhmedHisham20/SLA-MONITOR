@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
@@ -5,8 +6,9 @@ from app.models.conversation import Conversation, SLAStatus, DelayLevel
 from app.models.alert import Alert, AlertType, AlertStatus
 from app.models.settings import SystemSettings
 from app.models.page import FacebookPage
-from app.core.config import settings
+from app.core.config import settings as app_settings
 from app.core.logging import logger
+from app.core.datetime_utils import EGYPT_TZ
 
 
 def check_and_update_sla(
@@ -18,7 +20,7 @@ def check_and_update_sla(
         settings_obj = db.query(SystemSettings).first()
 
     threshold = (settings_obj.sla_threshold_minutes if settings_obj
-                 else settings.SLA_DELAY_THRESHOLD_MINUTES)
+                 else app_settings.SLA_DELAY_THRESHOLD_MINUTES)
 
     now = datetime.now(timezone.utc)
     elapsed = (now - conversation.message_timestamp).total_seconds() / 60
@@ -35,11 +37,21 @@ def check_and_update_sla(
         ).first()
         page_name = page.page_name if page else conversation.page_id
 
+        last_msg = None
+        if conversation.unanswered_texts:
+            try:
+                texts = json.loads(conversation.unanswered_texts)
+                if texts:
+                    last_msg = texts[-1]
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         alert_body = build_delay_alert_sync(
             page_name=page_name,
             customer_name=conversation.customer_name or conversation.customer_id,
-            received_time=conversation.message_timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"),
             waiting_minutes=int(elapsed),
+            customer_message=last_msg,
+            received_at=conversation.message_timestamp,
             conversation_link=conversation.conversation_link,
         )
 
@@ -82,18 +94,24 @@ def determine_delay_level(conversation: Conversation, elapsed_minutes: float, se
 def build_delay_alert_sync(
     page_name: str,
     customer_name: str,
-    received_time: str,
     waiting_minutes: int,
+    customer_message: Optional[str],
+    received_at: datetime,
     conversation_link: str,
 ) -> str:
-    return (
-        f"\U0001f6a8 Delayed Reply Alert\n"
-        f"Page Name: {page_name}\n"
-        f"Customer Name: {customer_name}\n"
-        f"Received At: {received_time}\n"
-        f"Current Delay: {waiting_minutes} Minutes\n"
-        f"Conversation Link: {conversation_link}"
-    )
+    egypt_time = received_at.astimezone(EGYPT_TZ)
+    received_fmt = egypt_time.strftime("%d/%m/%Y %I:%M %p")
+
+    msg = f"\U0001f6a8 SLA Alert\n\n"
+    msg += f"Page: {page_name}\n\n"
+    msg += f"Customer: {customer_name}\n\n"
+    msg += f"Waiting Time: {waiting_minutes} minutes\n\n"
+    if customer_message:
+        msg += f"Unanswered Customer Message:\n\"{customer_message}\"\n\n"
+    msg += f"Received:\n{received_fmt}\n\n"
+    msg += f"Open Chat:\n{conversation_link}\n\n"
+    msg += f"Dashboard:\n{app_settings.FRONTEND_URL}"
+    return msg
 
 
 def is_automated_message(msg: dict) -> bool:

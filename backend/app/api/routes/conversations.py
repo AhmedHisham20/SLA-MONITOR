@@ -13,6 +13,7 @@ from app.schemas.conversation import (
 )
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.core.datetime_utils import today_start_utc, yesterday_range_utc, days_ago_start_utc, now_egypt
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
@@ -37,20 +38,18 @@ def list_conversations(
     ).filter(FacebookPage.monitoring_enabled == True)
 
     if period and period != "all":
-        now = datetime.now(timezone.utc)
         if period == "today":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start = today_start_utc()
         elif period == "yesterday":
-            start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start, end = yesterday_range_utc()
             query = query.filter(
                 Conversation.message_timestamp >= start,
                 Conversation.message_timestamp < end,
             )
         elif period == "7days":
-            start = now - timedelta(days=7)
+            start = days_ago_start_utc(7)
         elif period == "30days":
-            start = now - timedelta(days=30)
+            start = days_ago_start_utc(30)
 
         if period != "yesterday":
             query = query.filter(Conversation.message_timestamp >= start)
@@ -129,7 +128,7 @@ def review_conversation(
     c = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    c.reviewed_at = datetime.now(timezone.utc)
+    c.reviewed_at = now_egypt()
     db.commit()
     return {"status": "reviewed", "id": conversation_id}
 
@@ -173,18 +172,17 @@ def get_status_counts(
     ).filter(FacebookPage.monitoring_enabled == True)
 
     if period and period != "all":
-        now = datetime.now(timezone.utc)
         if period == "today":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start = today_start_utc()
+            query = query.filter(Conversation.message_timestamp >= start)
         elif period == "yesterday":
-            start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start, end = yesterday_range_utc()
             query = query.filter(Conversation.message_timestamp >= start, Conversation.message_timestamp < end)
         elif period == "7days":
-            start = now - timedelta(days=7)
+            start = days_ago_start_utc(7)
+            query = query.filter(Conversation.message_timestamp >= start)
         elif period == "30days":
-            start = now - timedelta(days=30)
-        if period != "yesterday":
+            start = days_ago_start_utc(30)
             query = query.filter(Conversation.message_timestamp >= start)
 
     if page_id:

@@ -6,6 +6,7 @@ from app.models.conversation import Conversation, SLAStatus
 from app.models.alert import Alert
 from app.models.page import FacebookPage
 from app.schemas.report import ReportMetrics, ReportChartData, ModeratorPerformance
+from app.core.datetime_utils import now_egypt
 
 
 def _apply_monitored_filter(query, page_id=None):
@@ -141,9 +142,9 @@ def get_moderator_performance(
     end_date: Optional[datetime] = None,
 ) -> List[ModeratorPerformance]:
     if not start_date:
-        start_date = datetime.now(timezone.utc) - timedelta(days=30)
+        start_date = now_egypt().astimezone(timezone.utc) - timedelta(days=30)
     if not end_date:
-        end_date = datetime.now(timezone.utc)
+        end_date = now_egypt().astimezone(timezone.utc)
 
     query = db.query(
         Conversation.moderator_name,

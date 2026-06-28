@@ -55,8 +55,9 @@ class Conversation(Base):
     @property
     def conversation_link(self) -> str:
         if not self.customer_id:
-            return f"https://business.facebook.com/latest/inbox/all"
-        return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.customer_id}"
+            return "https://business.facebook.com/latest/inbox/all"
+        thread_id = f"t_{self.page_id}_{self.customer_id}"
+        return f"https://business.facebook.com/latest/inbox/all?selected_item_id={thread_id}"
 
     @property
     def waiting_minutes(self) -> int:

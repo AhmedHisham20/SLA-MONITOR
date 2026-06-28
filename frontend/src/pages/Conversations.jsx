@@ -63,6 +63,9 @@ function SlaEventRow({ event }) {
   const received = new Date(event.received_at).toLocaleString()
   const replied = event.replied_at ? new Date(event.replied_at).toLocaleString() : null
   const isExceeded = event.sla_exceeded
+  const waitingMinutes = isExceeded && !replied
+    ? Math.floor((Date.now() - new Date(event.received_at).getTime()) / 60000)
+    : null
   return (
     <div className={`flex items-start gap-3 py-3 px-4 rounded-xl ${isExceeded ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
       <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isExceeded ? 'bg-red-200' : 'bg-green-200'}`}>
@@ -79,8 +82,13 @@ function SlaEventRow({ event }) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span>Received: <span className="font-medium text-gray-700">{received}</span></span>
           {replied && <span>Replied: <span className="font-medium text-gray-700">{replied}</span></span>}
-          {event.response_time_seconds != null && (
+          {event.response_time_seconds != null ? (
             <span>Response: <span className={`font-semibold ${isExceeded ? 'text-red-600' : 'text-green-600'}`}>{formatDuration(event.response_time_seconds)}</span></span>
+          ) : isExceeded ? (
+            <span>Waiting: <span className="font-semibold text-red-600">{waitingMinutes} min</span></span>
+          ) : null}
+          {!replied && isExceeded && (
+            <span className="text-red-500 italic">Waiting for reply...</span>
           )}
           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isExceeded ? 'bg-red-200 text-red-700' : 'bg-green-200 text-green-700'}`}>
             {isExceeded ? 'Delayed' : 'OK'}

@@ -6,9 +6,21 @@ from app.models.conversation import Conversation, SLAStatus, DelayLevel
 from app.models.alert import Alert, AlertType, AlertStatus
 from app.models.settings import SystemSettings
 from app.models.page import FacebookPage
+from app.models.message_event import MessageEvent
 from app.core.config import settings as app_settings
 from app.core.logging import logger
 from app.core.datetime_utils import EGYPT_TZ
+
+
+def _flag_pending_events_as_exceeded(conversation_id: str, db: Session):
+    pending = db.query(MessageEvent).filter(
+        MessageEvent.conversation_id == conversation_id,
+        MessageEvent.replied_at == None,
+    ).all()
+    for event in pending:
+        event.sla_exceeded = True
+    if pending:
+        db.commit()
 
 
 def check_and_update_sla(
@@ -35,6 +47,8 @@ def check_and_update_sla(
         conversation.sla_status = SLAStatus.DELAYED
         determine_delay_level(conversation, elapsed, settings_obj)
 
+        _flag_pending_events_as_exceeded(conversation.id, db)
+
         page = db.query(FacebookPage).filter(
             FacebookPage.page_id == conversation.page_id
         ).first()
@@ -44,8 +58,10 @@ def check_and_update_sla(
         if conversation.unanswered_texts:
             try:
                 texts = json.loads(conversation.unanswered_texts)
-                if texts:
+                if isinstance(texts, list) and texts:
                     last_msg = texts[-1]
+                elif isinstance(texts, str) and texts:
+                    last_msg = texts
             except (json.JSONDecodeError, TypeError):
                 pass
         if not last_msg and conversation.message_content:
@@ -78,6 +94,7 @@ def check_and_update_sla(
     if elapsed >= threshold:
         conversation.sla_status = SLAStatus.DELAYED
         determine_delay_level(conversation, elapsed, settings_obj)
+        _flag_pending_events_as_exceeded(conversation.id, db)
         db.commit()
 
     return False, None

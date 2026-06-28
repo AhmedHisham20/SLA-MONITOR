@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.settings import SystemSettings
 from app.models.page import FacebookPage
+from app.models.conversation import Conversation
 from app.schemas.settings import SystemSettingsResponse, SystemSettingsUpdate
 from app.api.deps import require_admin
 from app.models.user import User
 from app.core.config import settings as app_settings
+from app.services.facebook_api import fetch_and_cache_conversation_link
 import httpx
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
@@ -155,3 +157,23 @@ def subscribe_page_webhook(page_id: str, db: Session = Depends(get_db), admin: U
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to subscribe: {str(e)}")
+
+
+@router.post("/backfill-conversation-links")
+async def backfill_conversation_links(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    convs = db.query(Conversation).filter(Conversation.facebook_link == None).all()
+    if not convs:
+        return {"total": 0, "updated": 0, "failed": 0, "message": "No conversations need backfill"}
+    updated = 0
+    failed = 0
+    for conv in convs:
+        page = db.query(FacebookPage).filter(FacebookPage.page_id == conv.page_id).first()
+        if not page or not page.access_token:
+            failed += 1
+            continue
+        ok = await fetch_and_cache_conversation_link(conv, page, db)
+        if ok:
+            updated += 1
+        else:
+            failed += 1
+    return {"total": len(convs), "updated": updated, "failed": failed}

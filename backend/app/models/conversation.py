@@ -47,6 +47,7 @@ class Conversation(Base):
     automated_message_count = Column(Integer, default=0)
     message_count = Column(Integer, default=0)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    facebook_link = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -54,13 +55,16 @@ class Conversation(Base):
 
     @property
     def conversation_link(self) -> str:
-        if not self.customer_id:
-            return "https://business.facebook.com/latest/inbox/all"
-        # Use the actual Facebook conversation ID if available (from webhook)
-        if self.conversation_id and self.conversation_id.startswith("t_"):
+        # Priority 1: Official Facebook link stored from Graph API
+        if self.facebook_link:
+            return self.facebook_link
+        # Priority 2: Use the actual Facebook conversation ID if available (from webhook)
+        if self.customer_id and self.conversation_id and self.conversation_id.startswith("t_"):
             return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.conversation_id}"
-        # Fallback: construct thread ID from page_id and customer_id
-        return f"https://business.facebook.com/latest/inbox/all?selected_item_id=t_{self.page_id}_{self.customer_id}"
+        # Priority 3: Fallback to constructed thread ID
+        if self.customer_id:
+            return f"https://business.facebook.com/latest/inbox/all?selected_item_id=t_{self.page_id}_{self.customer_id}"
+        return "https://business.facebook.com/latest/inbox/all"
 
     @property
     def waiting_minutes(self) -> int:

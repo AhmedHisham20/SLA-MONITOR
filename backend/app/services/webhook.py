@@ -7,6 +7,7 @@ from app.models.settings import SystemSettings
 from app.models.message_event import MessageEvent
 from app.core.logging import logger
 from app.services.sla import check_and_update_sla, is_automated_message
+from app.services.facebook_api import fetch_and_cache_conversation_link
 
 
 def _append_unanswered(conv: Conversation, text: str):
@@ -235,6 +236,8 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     existing.alert_sent_at = None
 
             db.commit()
+            if not existing.facebook_link:
+                await fetch_and_cache_conversation_link(existing, page, db)
             return
 
         if is_page_sender:
@@ -260,6 +263,8 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
 
         _create_message_event(conversation, message_text, message_time, db)
         db.commit()
+
+        await fetch_and_cache_conversation_link(conversation, page, db)
 
         check_and_update_sla(conversation, db)
     except Exception as e:
@@ -369,6 +374,8 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 existing.alert_sent_at = None
                 log_event("info", "webhook", f"Reset alert for conversation {existing.id}, sender {sender_id[:20]}")
             db.commit()
+            if not existing.facebook_link:
+                await fetch_and_cache_conversation_link(existing, page, db)
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
             return
 
@@ -394,6 +401,8 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
 
         _create_message_event(conversation, message_text, message_time, db)
         db.commit()
+
+        await fetch_and_cache_conversation_link(conversation, page, db)
 
         log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 

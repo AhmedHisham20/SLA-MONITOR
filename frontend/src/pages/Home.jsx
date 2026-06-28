@@ -7,9 +7,8 @@ import {
   RefreshCw,
   Shield,
   Cpu,
-  BrainCircuit,
-  Zap,
 } from 'lucide-react'
+import AIAgent from '../components/AIAgent'
 
 const insightsGenerators = [
   { id: 'delayed', check: (s) => (s?.delayed_conversations || 0) > 0, build: (s) => `${s.delayed_conversations} conversation${s.delayed_conversations > 1 ? 's are' : ' is'} currently delayed.` },
@@ -200,50 +199,17 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* AI Assistant */}
-          <div className="lg:col-span-2 bg-slate-800/60 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <BrainCircuit className="w-5 h-5 text-purple-400" />
-              <h2 className="text-sm font-semibold text-slate-200">AI Assistant</h2>
-            </div>
-            <div className="min-h-[120px] flex items-center">
-              {thinking ? (
-                <div className="flex items-center gap-3 text-slate-400">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span className="text-sm text-slate-500">Analyzing live data...</span>
-                </div>
-              ) : (
-                <div className="w-full">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Zap className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="relative overflow-hidden">
-                        <p className="text-sm text-slate-300 leading-relaxed transition-opacity duration-300">
-                          {insights[currentInsight]}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 mt-3">
-                        {insights.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentInsight(i)}
-                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                              i === currentInsight ? 'bg-purple-400 w-4' : 'bg-slate-600 hover:bg-slate-500'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* AI Agent */}
+          <div className="lg:col-span-2">
+            <AIAgent
+              status={status}
+              lastUpdated={lastUpdated}
+              insights={insights}
+              currentInsight={currentInsight}
+              thinking={thinking}
+              onInsightChange={setCurrentInsight}
+              stats={s}
+            />
           </div>
 
           {/* System Status Card */}

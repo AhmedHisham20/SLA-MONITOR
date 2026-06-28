@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { conversations, settings } from '../services/api'
 import {
   ExternalLink, MessageSquare, CheckCircle, Clock, AlertTriangle,
-  ChevronDown, ChevronRight, User, Bot, Timer, XCircle, ShieldCheck, Eye,
+  ChevronDown, ChevronRight, Timer, XCircle, ShieldCheck, Eye,
 } from 'lucide-react'
 
 const periods = [
@@ -343,70 +343,13 @@ export default function Conversations() {
                     ) : (
                       <ChevronRight className="w-3.5 h-3.5" />
                     )}
-                    {group.items.length} session{group.items.length > 1 ? 's' : ''} · View details
+                    SLA History
                   </button>
 
                   {expanded[group.customer_id] && (
                     <div className="border-t border-gray-100">
-                      <div className="px-5 py-4 bg-gray-50/80">
-                        <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          Response Timeline
-                        </h4>
-                        <div className="max-w-2xl mx-auto space-y-3">
-                          {group.items.map((c, idx) => {
-                            const isCustomer = c.last_sender_type === 'customer'
-                            const prev = idx > 0 ? group.items[idx - 1] : null
-                            const isReply = !isCustomer && prev && prev.last_sender_type === 'customer'
-
-                            return (
-                              <div key={c.id} className={`flex ${isCustomer ? '' : 'flex-row-reverse'}`}>
-                                <div className={`flex gap-3 max-w-[85%] ${isCustomer ? '' : 'flex-row-reverse'}`}>
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                    isCustomer ? 'bg-blue-100' : 'bg-green-100'
-                                  }`}>
-                                    {isCustomer ? (
-                                      <User className="w-4 h-4 text-blue-600" />
-                                    ) : (
-                                      <Bot className="w-4 h-4 text-green-600" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <div className={`rounded-2xl px-4 py-2.5 ${
-                                      isCustomer
-                                        ? 'bg-white border border-gray-200 text-gray-800'
-                                        : 'bg-green-50 border border-green-200 text-gray-800'
-                                    }`}>
-                                      <div className="flex items-center gap-2 mb-0.5">
-                                        <span className={`text-xs font-semibold ${isCustomer ? 'text-blue-600' : 'text-green-600'}`}>
-                                          {isCustomer ? 'Customer' : 'Page'}
-                                        </span>
-                                        {!isCustomer && c.moderator_name && (
-                                          <span className="text-xs text-gray-400">· {c.moderator_name}</span>
-                                        )}
-                                      </div>
-                                      <p className="text-sm whitespace-pre-wrap break-words">
-                                        {c.message_content || (isCustomer ? 'Sent a message' : 'Replied')}
-                                      </p>
-                                    </div>
-                                    <div className={`flex items-center gap-2 mt-1 ${isCustomer ? '' : 'flex-row-reverse'}`}>
-                                      <span className="text-[11px] text-gray-400">{new Date(c.message_timestamp).toLocaleString()}</span>
-                                      {isReply && c.response_time_seconds != null && (
-                                        <span className="text-[11px] text-gray-400">
-                                          · Response: {Math.floor(c.response_time_seconds / 60)}m {c.response_time_seconds % 60}s
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-
                       {(detailEvents[latest.id] && detailEvents[latest.id].length > 0) && (
-                        <div className="border-t border-gray-200 px-5 py-4">
+                        <div className="px-5 py-4">
                           <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4" />
                             SLA Events
@@ -416,6 +359,11 @@ export default function Conversations() {
                               <SlaEventRow key={evt.id} event={evt} />
                             ))}
                           </div>
+                        </div>
+                      )}
+                      {(detailEvents[latest.id] && detailEvents[latest.id].length === 0) && (
+                        <div className="px-5 py-8 text-center text-sm text-gray-400">
+                          No SLA events recorded yet
                         </div>
                       )}
                     </div>

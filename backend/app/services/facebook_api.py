@@ -50,16 +50,24 @@ async def fetch_customer_name(
         "fields": "name",
         "access_token": page_access_token,
     }
+    logger.info(f"[CUSTOMER_NAME] Fetching name for PSID={psid} url={url}")
     async with httpx.AsyncClient(timeout=15) as client:
         try:
             resp = await client.get(url, params=params)
+            logger.info(f"[CUSTOMER_NAME] HTTP status={resp.status_code} for PSID={psid}")
             if resp.status_code != 200:
-                logger.error(f"Graph API user profile error {resp.status_code}: {resp.text[:200]}")
+                logger.error(f"[CUSTOMER_NAME] API error for PSID={psid}: status={resp.status_code} body={resp.text[:500]}")
                 return None
             data = resp.json()
-            return data.get("name")
+            logger.info(f"[CUSTOMER_NAME] Full JSON response for PSID={psid}: {json.dumps(data)}")
+            name = data.get("name")
+            if name:
+                logger.info(f"[CUSTOMER_NAME] Successfully got name='{name}' for PSID={psid}")
+            else:
+                logger.warning(f"[CUSTOMER_NAME] API returned no 'name' field for PSID={psid}. keys={list(data.keys())}")
+            return name
         except Exception as e:
-            logger.error(f"Graph API user profile request failed: {e}")
+            logger.error(f"[CUSTOMER_NAME] Request failed for PSID={psid}: {e}")
             return None
 
 

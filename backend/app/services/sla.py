@@ -141,7 +141,8 @@ def build_delay_alert_sync(
     if customer_message:
         msg += f"Unanswered Customer Message:\n\"{customer_message}\"\n\n"
     msg += f"Received:\n{received_fmt}\n\n"
-    msg += f"Open Chat:\n{conversation_link}\n\n"
+    if conversation_link:
+        msg += f"Open Chat:\n{conversation_link}\n\n"
     msg += f"Dashboard:\n{app_settings.FRONTEND_URL}"
     return msg
 

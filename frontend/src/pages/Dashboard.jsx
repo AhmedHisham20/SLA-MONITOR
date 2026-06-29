@@ -203,10 +203,17 @@ export default function Dashboard() {
                     )}
                   </td>
                   <td className="py-3 px-3">
-                    <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open
-                    </a>
+                    {c.conversation_link ? (
+                      <a href={c.conversation_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-gray-400 text-xs font-medium cursor-not-allowed" title="Conversation link unavailable">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Unavailable
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

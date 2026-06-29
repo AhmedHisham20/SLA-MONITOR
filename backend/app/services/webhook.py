@@ -236,7 +236,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     existing.alert_sent_at = None
 
             db.commit()
-            if not existing.facebook_link:
+            if not existing.conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             return
 
@@ -374,7 +374,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 existing.alert_sent_at = None
                 log_event("info", "webhook", f"Reset alert for conversation {existing.id}, sender {sender_id[:20]}")
             db.commit()
-            if not existing.facebook_link:
+            if not existing.conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
             return

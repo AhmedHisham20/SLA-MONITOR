@@ -161,7 +161,7 @@ def subscribe_page_webhook(page_id: str, db: Session = Depends(get_db), admin: U
 
 @router.post("/backfill-conversation-links")
 async def backfill_conversation_links(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    convs = db.query(Conversation).filter(Conversation.facebook_link == None).all()
+    convs = db.query(Conversation).filter(Conversation.conversation_link == None).all()
     if not convs:
         return {"total": 0, "updated": 0, "failed": 0, "message": "No conversations need backfill"}
     updated = 0

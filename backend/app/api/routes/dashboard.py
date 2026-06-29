@@ -122,7 +122,7 @@ async def get_dashboard(
             unanswered_count=c.unanswered_count or 0,
             unanswered_texts=c.unanswered_texts,
             is_awaiting_reply=(c.last_sender_type == 'customer'),
-            conversation_link=c.conversation_link,
+            conversation_link=c.conversation_link or "",
         ))
 
     stats = DashboardStats(

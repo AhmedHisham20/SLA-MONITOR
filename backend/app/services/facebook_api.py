@@ -41,6 +41,28 @@ async def fetch_conversation_link(
             return None
 
 
+async def fetch_customer_name(
+    psid: str,
+    page_access_token: str,
+) -> Optional[str]:
+    url = f"{settings.FACEBOOK_GRAPH_API_URL}/{psid}"
+    params = {
+        "fields": "name",
+        "access_token": page_access_token,
+    }
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url, params=params)
+            if resp.status_code != 200:
+                logger.error(f"Graph API user profile error {resp.status_code}: {resp.text[:200]}")
+                return None
+            data = resp.json()
+            return data.get("name")
+        except Exception as e:
+            logger.error(f"Graph API user profile request failed: {e}")
+            return None
+
+
 async def fetch_and_cache_conversation_link(
     conversation: Conversation,
     page: FacebookPage,

@@ -7,7 +7,7 @@ from app.models.settings import SystemSettings
 from app.models.message_event import MessageEvent
 from app.core.logging import logger
 from app.services.sla import check_and_update_sla, is_automated_message
-from app.services.facebook_api import fetch_and_cache_conversation_link
+from app.services.facebook_api import fetch_and_cache_conversation_link, fetch_customer_name
 
 
 def _append_unanswered(conv: Conversation, text: str):
@@ -236,6 +236,11 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     existing.alert_sent_at = None
 
             db.commit()
+            if not existing.customer_name and page.access_token:
+                name = await fetch_customer_name(sender_id, page.access_token)
+                if name:
+                    existing.customer_name = name
+                    db.commit()
             if not existing.cached_conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             return
@@ -265,6 +270,12 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
         db.commit()
 
         await fetch_and_cache_conversation_link(conversation, page, db)
+
+        if not conversation.customer_name and page.access_token:
+            name = await fetch_customer_name(sender_id, page.access_token)
+            if name:
+                conversation.customer_name = name
+                db.commit()
 
         check_and_update_sla(conversation, db)
     except Exception as e:
@@ -374,6 +385,11 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 existing.alert_sent_at = None
                 log_event("info", "webhook", f"Reset alert for conversation {existing.id}, sender {sender_id[:20]}")
             db.commit()
+            if not existing.customer_name and page.access_token:
+                name = await fetch_customer_name(sender_id, page.access_token)
+                if name:
+                    existing.customer_name = name
+                    db.commit()
             if not existing.cached_conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
@@ -403,6 +419,12 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         db.commit()
 
         await fetch_and_cache_conversation_link(conversation, page, db)
+
+        if not conversation.customer_name and page.access_token:
+            name = await fetch_customer_name(sender_id, page.access_token)
+            if name:
+                conversation.customer_name = name
+                db.commit()
 
         log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 

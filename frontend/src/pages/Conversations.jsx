@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { conversations, settings } from '../services/api'
 import {
-  ExternalLink, MessageSquare, CheckCircle, Clock, AlertTriangle,
-  ChevronDown, ChevronRight, Timer, XCircle, ShieldCheck, Eye,
+  MessageSquare, CheckCircle, Clock, AlertTriangle,
+  ChevronDown, ChevronRight, Timer, XCircle, ShieldCheck, Eye, Copy,
 } from 'lucide-react'
 
 const periods = [
@@ -27,7 +27,7 @@ function isPriority(conv) {
   return isDelayed(conv) && !conv.reviewed_at
 }
 
-function StatusBadge({ lastSenderType, waitingMinutes, reviewedAt, delayed, priority }) {
+function StatusBadge({ lastSenderType, waitingMinutes, delayed, priority }) {
   if (lastSenderType === 'page') {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">
@@ -115,6 +115,12 @@ export default function Conversations() {
   const [counts, setCounts] = useState({ all: 0, responded: 0, pending: 0, delayed: 0 })
   const [detailEvents, setDetailEvents] = useState({})
   const [reviewing, setReviewing] = useState({})
+  const [toast, setToast] = useState(null)
+
+  const showToast = useCallback((msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2000)
+  }, [])
 
   useEffect(() => {
     settings.pages().then((res) => {
@@ -262,10 +268,10 @@ export default function Conversations() {
         <div className="space-y-4">
           {groupedList.map((group) => {
             const latest = group.items[group.items.length - 1]
-            const convLink = latest.conversation_link
             const _isDelayed = isDelayed(latest)
             const _isPriority = isPriority(latest)
-            const hasViolation = latest.has_sla_violation || _isDelayed
+            const displayName = group.customer_name || 'Unknown Customer'
+            const copyValue = group.customer_name || group.customer_id
             const cardRing = _isPriority
               ? 'ring-2 ring-red-500 shadow-lg shadow-red-200 border-red-400'
               : _isDelayed
@@ -291,14 +297,38 @@ export default function Conversations() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-sm font-bold text-gray-900">
-                          {group.customer_name || group.customer_id}
+                        <span className="text-lg font-bold text-gray-900">
+                          {displayName}
                         </span>
-                        <span className="text-xs text-gray-400">· {group.page_name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(copyValue)
+                            showToast('Customer name copied.')
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          Copy Name
+                        </button>
+                        <a
+                          href="https://business.facebook.com/latest/inbox/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200"
+                          title="Open Messenger Inbox"
+                        >
+                          🔗
+                        </a>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-xs text-gray-400">{group.page_name}</span>
                         <StatusBadge
                           lastSenderType={latest.last_sender_type}
                           waitingMinutes={latest.waiting_minutes}
-                          reviewedAt={latest.reviewed_at}
                           delayed={_isDelayed}
                           priority={_isPriority}
                         />
@@ -334,15 +364,6 @@ export default function Conversations() {
                           {reviewing[latest.id] ? '...' : 'Reviewed'}
                         </button>
                       )}
-                      <a
-                        href={convLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Open Chat
-                      </a>
                     </div>
                   </div>
                 </div>
@@ -402,6 +423,12 @@ export default function Conversations() {
             <button disabled={data.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50">Previous</button>
             <button disabled={data.page >= totalPages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50">Next</button>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm z-50">
+          {toast}
         </div>
       )}
     </div>

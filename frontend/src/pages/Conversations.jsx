@@ -152,8 +152,9 @@ export default function Conversations() {
     list.sort((a, b) => {
       const la = a.items[a.items.length - 1]
       const lb = b.items[b.items.length - 1]
-      const ra = la.sla_status === 'delayed' && !la.reviewed_at ? 0 : 1
-      const rb = lb.sla_status === 'delayed' && !lb.reviewed_at ? 0 : 1
+      const isDelayedPrio = (c) => c.last_sender_type === 'customer' && c.sla_status === 'delayed' && !c.reviewed_at
+      const ra = isDelayedPrio(la) ? 0 : 1
+      const rb = isDelayedPrio(lb) ? 0 : 1
       if (ra !== rb) return ra - rb
       return new Date(lb.message_timestamp) - new Date(la.message_timestamp)
     })

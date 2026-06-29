@@ -50,24 +50,32 @@ async def fetch_customer_name(
         "fields": "name",
         "access_token": page_access_token,
     }
-    logger.info(f"[CUSTOMER_NAME] Fetching name for PSID={psid} url={url}")
+    # Mask token for safe logging
+    token_preview = page_access_token[:10] + '...' + page_access_token[-5:] if len(page_access_token) > 15 else 'TOO_SHORT'
+    logger.info(f"[CUSTOMER_NAME] === REQUEST ===")
+    logger.info(f"[CUSTOMER_NAME] Full URL: {url}?fields=name&access_token={token_preview}")
+    logger.info(f"[CUSTOMER_NAME] PSID: '{psid}' (length={len(psid)}, digits_only={psid.isdigit()})")
+    logger.info(f"[CUSTOMER_NAME] Graph API version: {settings.FACEBOOK_GRAPH_API_VERSION}")
+    logger.info(f"[CUSTOMER_NAME] Token mask: {token_preview}")
     async with httpx.AsyncClient(timeout=15) as client:
         try:
             resp = await client.get(url, params=params)
-            logger.info(f"[CUSTOMER_NAME] HTTP status={resp.status_code} for PSID={psid}")
+            body = resp.text
+            logger.info(f"[CUSTOMER_NAME] === RESPONSE ===")
+            logger.info(f"[CUSTOMER_NAME] HTTP status: {resp.status_code}")
+            logger.info(f"[CUSTOMER_NAME] Response body: {body[:1000]}")
             if resp.status_code != 200:
-                logger.error(f"[CUSTOMER_NAME] API error for PSID={psid}: status={resp.status_code} body={resp.text[:500]}")
+                logger.error(f"[CUSTOMER_NAME] Graph API user profile error for PSID='{psid}': status={resp.status_code} body={body[:1000]}")
                 return None
             data = resp.json()
-            logger.info(f"[CUSTOMER_NAME] Full JSON response for PSID={psid}: {json.dumps(data)}")
             name = data.get("name")
             if name:
-                logger.info(f"[CUSTOMER_NAME] Successfully got name='{name}' for PSID={psid}")
+                logger.info(f"[CUSTOMER_NAME] SUCCESS: name='{name}' for PSID='{psid}'")
             else:
-                logger.warning(f"[CUSTOMER_NAME] API returned no 'name' field for PSID={psid}. keys={list(data.keys())}")
+                logger.warning(f"[CUSTOMER_NAME] API returned OK but no 'name' field for PSID='{psid}'. Full response: {json.dumps(data)}")
             return name
         except Exception as e:
-            logger.error(f"[CUSTOMER_NAME] Request failed for PSID={psid}: {e}")
+            logger.error(f"[CUSTOMER_NAME] REQUEST FAILED for PSID='{psid}': {e}")
             return None
 
 

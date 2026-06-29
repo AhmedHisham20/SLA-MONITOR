@@ -127,6 +127,7 @@ async def process_webhook_event(entry: dict, db: Session):
 async def process_message(msg: dict, page: FacebookPage, value: dict, db: Session):
     try:
         from_id = msg.get("from", {})
+        logger.info(f"[WEBHOOK_RAW] process_message: msg keys={list(msg.keys())}, from_id type={type(from_id).__name__}, from_id={json.dumps(from_id)[:200]}")
         if isinstance(from_id, dict):
             sender_id = from_id.get("id", "")
             sender_name = from_id.get("name", "")
@@ -237,7 +238,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
 
             db.commit()
             if not existing.customer_name:
-                logger.info(f"[CUSTOMER_NAME] process_message: existing conv {existing.id} has no customer_name, page.access_token={'SET' if page.access_token else 'NONE'}")
+                logger.info(f"[CUSTOMER_NAME] process_message: existing conv {existing.id} has no customer_name, page.access_token={'SET' if page.access_token else 'NONE'}, sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
                 if page.access_token:
                     logger.info(f"[CUSTOMER_NAME] process_message: attempting fetch for PSID={sender_id}")
                     name = await fetch_customer_name(sender_id, page.access_token)
@@ -302,9 +303,11 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
 async def process_messaging_entry(msg: dict, page_id: str, db: Session):
     from app.services.event_logger import log_event
     try:
-        sender_id = msg.get("sender", {}).get("id", "")
-        sender_name = msg.get("sender", {}).get("name", "") or msg.get("sender", {}).get("first_name", "")
+        sender = msg.get("sender", {})
+        sender_id = sender.get("id", "")
+        sender_name = sender.get("name", "") or sender.get("first_name", "")
         message_data = msg.get("message", {})
+        logger.info(f"[WEBHOOK_RAW] process_messaging_entry: msg keys={list(msg.keys())}, sender={json.dumps(sender)[:300]}, sender_id='{sender_id}', sender_name='{sender_name}'")
         if not sender_id or not message_data:
             return
 
@@ -403,6 +406,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             db.commit()
             if not existing.customer_name:
                 logger.info(f"[CUSTOMER_NAME] process_messaging_entry: existing conv {existing.id} has no customer_name, page.access_token={'SET' if page.access_token else 'NONE'}")
+                logger.info(f"[CUSTOMER_NAME] process_messaging_entry: sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
                 if page.access_token:
                     logger.info(f"[CUSTOMER_NAME] process_messaging_entry: attempting fetch for PSID={sender_id}")
                     name = await fetch_customer_name(sender_id, page.access_token)
@@ -444,7 +448,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
 
         await fetch_and_cache_conversation_link(conversation, page, db)
 
-        logger.info(f"[CUSTOMER_NAME] process_messaging_entry: new conv {conversation.id} created, customer_name={'SET' if conversation.customer_name else 'MISSING'}, sender_name_from_webhook='{sender_name}', page.access_token={'SET' if page.access_token else 'NONE'}")
+        logger.info(f"[CUSTOMER_NAME] process_messaging_entry: new conv {conversation.id} created, customer_name={'SET' if conversation.customer_name else 'MISSING'}, sender_name_from_webhook='{sender_name}', sender_id='{sender_id}', page.access_token={'SET' if page.access_token else 'NONE'}")
         if not conversation.customer_name:
             if page.access_token:
                 logger.info(f"[CUSTOMER_NAME] process_messaging_entry: attempting fetch for PSID={sender_id}")

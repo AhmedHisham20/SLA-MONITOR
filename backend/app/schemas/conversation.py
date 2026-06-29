@@ -38,7 +38,7 @@ class ConversationResponse(BaseModel):
     unanswered_count: int = 0
     unanswered_texts: Optional[str] = None
     waiting_minutes: int = 0
-    conversation_link: str = ""
+    conversation_link: Optional[str] = ""
     is_working_hours: bool = True
     created_at: datetime
     message_events: List[MessageEventResponse] = []

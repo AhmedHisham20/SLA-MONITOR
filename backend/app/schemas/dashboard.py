@@ -30,7 +30,7 @@ class RecentConversation(BaseModel):
     unanswered_count: int = 0
     unanswered_texts: Optional[str] = None
     is_awaiting_reply: bool = True
-    conversation_link: str = ""
+    conversation_link: Optional[str] = ""
 
     class Config:
         from_attributes = True

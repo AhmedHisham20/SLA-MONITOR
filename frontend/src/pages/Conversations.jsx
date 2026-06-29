@@ -20,7 +20,14 @@ const statusTabs = [
   { value: 'delayed', label: 'Delayed' },
 ]
 
-function StatusBadge({ status, lastSenderType, waitingMinutes, reviewedAt }) {
+function isDelayed(conv) {
+  return conv.last_sender_type === 'customer' && conv.sla_status === 'delayed'
+}
+function isPriority(conv) {
+  return isDelayed(conv) && !conv.reviewed_at
+}
+
+function StatusBadge({ lastSenderType, waitingMinutes, reviewedAt, delayed, priority }) {
   if (lastSenderType === 'page') {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">
@@ -29,14 +36,13 @@ function StatusBadge({ status, lastSenderType, waitingMinutes, reviewedAt }) {
       </span>
     )
   }
-  if (status === 'delayed') {
-    const isReviewed = !!reviewedAt
+  if (delayed) {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border-2 border-red-400 shadow-sm">
         <AlertTriangle className="w-4 h-4" />
         DELAYED
         {waitingMinutes > 0 && <span> · {waitingMinutes}m</span>}
-        {isReviewed && (
+        {!priority && (
           <span className="ml-1 inline-flex items-center gap-1 text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded-full">REVIEWED</span>
         )}
       </span>
@@ -152,9 +158,8 @@ export default function Conversations() {
     list.sort((a, b) => {
       const la = a.items[a.items.length - 1]
       const lb = b.items[b.items.length - 1]
-      const isDelayedPrio = (c) => c.last_sender_type === 'customer' && c.sla_status === 'delayed' && !c.reviewed_at
-      const ra = isDelayedPrio(la) ? 0 : 1
-      const rb = isDelayedPrio(lb) ? 0 : 1
+      const ra = isPriority(la) ? 0 : 1
+      const rb = isPriority(lb) ? 0 : 1
       if (ra !== rb) return ra - rb
       return new Date(lb.message_timestamp) - new Date(la.message_timestamp)
     })
@@ -258,22 +263,21 @@ export default function Conversations() {
           {groupedList.map((group) => {
             const latest = group.items[group.items.length - 1]
             const convLink = latest.conversation_link
-            const isDelayed = latest.last_sender_type === 'customer' && latest.sla_status === 'delayed'
-            const isReviewed = !!latest.reviewed_at
-            const isUnreviewedDelayed = isDelayed && !isReviewed
-            const hasViolation = latest.has_sla_violation || isDelayed
-            const cardRing = isUnreviewedDelayed
+            const _isDelayed = isDelayed(latest)
+            const _isPriority = isPriority(latest)
+            const hasViolation = latest.has_sla_violation || _isDelayed
+            const cardRing = _isPriority
               ? 'ring-2 ring-red-500 shadow-lg shadow-red-200 border-red-400'
-              : isDelayed
+              : _isDelayed
                 ? 'ring-2 ring-red-300 shadow-md shadow-red-100 border-red-200'
                 : 'ring-2 ring-green-400 shadow-lg shadow-green-100 border-green-300'
-            const cardBg = isUnreviewedDelayed
+            const cardBg = _isPriority
               ? 'bg-gradient-to-r from-red-50 to-white'
-              : isDelayed
+              : _isDelayed
                 ? 'bg-gradient-to-r from-red-50/60 to-white'
                 : 'bg-gradient-to-r from-green-50 to-white'
-            const iconBg = isUnreviewedDelayed ? 'bg-red-100' : isDelayed ? 'bg-red-50' : 'bg-green-100'
-            const iconColor = isUnreviewedDelayed ? 'text-red-500' : isDelayed ? 'text-red-400' : 'text-green-500'
+            const iconBg = _isPriority ? 'bg-red-100' : _isDelayed ? 'bg-red-50' : 'bg-green-100'
+            const iconColor = _isPriority ? 'text-red-500' : _isDelayed ? 'text-red-400' : 'text-green-500'
             return (
               <div
                 key={group.customer_id}
@@ -292,10 +296,11 @@ export default function Conversations() {
                         </span>
                         <span className="text-xs text-gray-400">· {group.page_name}</span>
                         <StatusBadge
-                          status={latest.sla_status}
                           lastSenderType={latest.last_sender_type}
                           waitingMinutes={latest.waiting_minutes}
                           reviewedAt={latest.reviewed_at}
+                          delayed={_isDelayed}
+                          priority={_isPriority}
                         />
                       </div>
 
@@ -319,7 +324,7 @@ export default function Conversations() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {isUnreviewedDelayed && (
+                      {_isPriority && (
                         <button
                           onClick={() => handleReview(latest.id)}
                           disabled={reviewing[latest.id]}

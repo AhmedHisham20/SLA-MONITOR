@@ -47,11 +47,21 @@ class Conversation(Base):
     automated_message_count = Column(Integer, default=0)
     message_count = Column(Integer, default=0)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
-    conversation_link = Column(Text, nullable=True)
+    cached_conversation_link = Column("conversation_link", Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     page = relationship("FacebookPage", backref="conversations")
+
+    @property
+    def conversation_link(self) -> str:
+        if self.cached_conversation_link:
+            return self.cached_conversation_link
+        if self.customer_id and self.conversation_id and self.conversation_id.startswith("t_"):
+            return f"https://business.facebook.com/latest/inbox/all?selected_item_id={self.conversation_id}"
+        if self.customer_id:
+            return f"https://business.facebook.com/latest/inbox/all?selected_item_id=t_{self.page_id}_{self.customer_id}"
+        return "https://business.facebook.com/latest/inbox/all"
 
     @property
     def waiting_minutes(self) -> int:

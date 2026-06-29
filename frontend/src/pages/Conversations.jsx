@@ -328,22 +328,15 @@ export default function Conversations() {
                           {reviewing[latest.id] ? '...' : 'Reviewed'}
                         </button>
                       )}
-                      {convLink ? (
-                        <a
-                          href={convLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Open Chat
-                        </a>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-gray-400 text-xs font-medium px-3 py-2 rounded-lg border border-gray-200 cursor-not-allowed">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Unavailable
-                        </span>
-                      )}
+                      <a
+                        href={convLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open Chat
+                      </a>
                     </div>
                   </div>
                 </div>

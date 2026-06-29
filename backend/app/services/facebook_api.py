@@ -55,7 +55,7 @@ async def fetch_and_cache_conversation_link(
         page.page_id, page.access_token, conversation.customer_id
     )
     if link:
-        conversation.conversation_link = link
+        conversation.cached_conversation_link = link
         db.commit()
         logger.info(f"Cached conversation link for {conversation.customer_id}: {link}")
         return True

@@ -104,7 +104,7 @@ def list_conversations(
         conv_resp = ConversationResponse.model_validate(c)
         conv_resp.page_name = page_obj.page_name if page_obj else None
         conv_resp.waiting_minutes = c.waiting_minutes
-        conv_resp.conversation_link = c.conversation_link or ""
+        conv_resp.conversation_link = c.conversation_link
         conv_resp.has_sla_violation = (
             c.id in violation_conv_ids
             or (c.last_sender_type == 'customer' and c.sla_status == SLAStatus.DELAYED)
@@ -147,7 +147,7 @@ def get_conversation(
     conv_resp = ConversationResponse.model_validate(c)
     conv_resp.page_name = page_obj.page_name if page_obj else None
     conv_resp.waiting_minutes = c.waiting_minutes
-    conv_resp.conversation_link = c.conversation_link or ""
+    conv_resp.conversation_link = c.conversation_link
     if include_events:
         events = db.query(MessageEvent).filter(
             MessageEvent.conversation_id == c.id,

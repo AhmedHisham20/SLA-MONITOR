@@ -7,7 +7,7 @@ from app.models.settings import SystemSettings
 from app.models.message_event import MessageEvent
 from app.core.logging import logger
 from app.services.sla import check_and_update_sla, is_automated_message
-from app.services.facebook_api import fetch_and_cache_conversation_link, fetch_customer_name
+from app.services.facebook_api import fetch_and_cache_conversation_link
 
 
 def _append_unanswered(conv: Conversation, text: str):
@@ -237,19 +237,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
                     existing.alert_sent_at = None
 
             db.commit()
-            if not existing.customer_name:
-                logger.info(f"[CUSTOMER_NAME] process_message: existing conv {existing.id} has no customer_name, page.access_token={'SET' if page.access_token else 'NONE'}, sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
-                if page.access_token:
-                    logger.info(f"[CUSTOMER_NAME] process_message: attempting fetch for PSID={sender_id}")
-                    name = await fetch_customer_name(sender_id, page.access_token)
-                    if name:
-                        existing.customer_name = name
-                        db.commit()
-                        logger.info(f"[CUSTOMER_NAME] process_message: saved name='{name}' for conv {existing.id}")
-                    else:
-                        logger.warning(f"[CUSTOMER_NAME] process_message: fetch_customer_name returned None for PSID={sender_id}")
-            else:
-                logger.info(f"[CUSTOMER_NAME] process_message: existing conv {existing.id} already has customer_name='{existing.customer_name}'")
+            logger.info(f"[CUSTOMER_NAME] process_message: existing conv {existing.id}, customer_name='{existing.customer_name or ''}', sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
             if not existing.cached_conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             return
@@ -280,19 +268,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
 
         await fetch_and_cache_conversation_link(conversation, page, db)
 
-        logger.info(f"[CUSTOMER_NAME] process_message: new conv {conversation.id} created, customer_name={'SET' if conversation.customer_name else 'MISSING'}, sender_name_from_webhook='{sender_name}', page.access_token={'SET' if page.access_token else 'NONE'}")
-        if not conversation.customer_name:
-            if page.access_token:
-                logger.info(f"[CUSTOMER_NAME] process_message: attempting fetch for PSID={sender_id}")
-                name = await fetch_customer_name(sender_id, page.access_token)
-                if name:
-                    conversation.customer_name = name
-                    db.commit()
-                    logger.info(f"[CUSTOMER_NAME] process_message: saved name='{name}' for conv {conversation.id}")
-                else:
-                    logger.warning(f"[CUSTOMER_NAME] process_message: fetch_customer_name returned None for PSID={sender_id}")
-            else:
-                logger.error(f"[CUSTOMER_NAME] process_message: cannot fetch — page.access_token is None for page {page.page_id}")
+        logger.info(f"[CUSTOMER_NAME] process_message: new conv {conversation.id}, customer_name='{conversation.customer_name or ''}', sender_name='{sender_name}', sender_id='{sender_id}'")
 
         check_and_update_sla(conversation, db)
     except Exception as e:
@@ -404,20 +380,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
                 existing.alert_sent_at = None
                 log_event("info", "webhook", f"Reset alert for conversation {existing.id}, sender {sender_id[:20]}")
             db.commit()
-            if not existing.customer_name:
-                logger.info(f"[CUSTOMER_NAME] process_messaging_entry: existing conv {existing.id} has no customer_name, page.access_token={'SET' if page.access_token else 'NONE'}")
-                logger.info(f"[CUSTOMER_NAME] process_messaging_entry: sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
-                if page.access_token:
-                    logger.info(f"[CUSTOMER_NAME] process_messaging_entry: attempting fetch for PSID={sender_id}")
-                    name = await fetch_customer_name(sender_id, page.access_token)
-                    if name:
-                        existing.customer_name = name
-                        db.commit()
-                        logger.info(f"[CUSTOMER_NAME] process_messaging_entry: saved name='{name}' for conv {existing.id}")
-                    else:
-                        logger.warning(f"[CUSTOMER_NAME] process_messaging_entry: fetch_customer_name returned None for PSID={sender_id}")
-            else:
-                logger.info(f"[CUSTOMER_NAME] process_messaging_entry: existing conv {existing.id} already has customer_name='{existing.customer_name}'")
+            logger.info(f"[CUSTOMER_NAME] process_messaging_entry: existing conv {existing.id}, customer_name='{existing.customer_name or ''}', sender_id='{sender_id}', sender_name='{sender_name}', is_page_sender={is_page_sender}")
             if not existing.cached_conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
@@ -448,19 +411,7 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
 
         await fetch_and_cache_conversation_link(conversation, page, db)
 
-        logger.info(f"[CUSTOMER_NAME] process_messaging_entry: new conv {conversation.id} created, customer_name={'SET' if conversation.customer_name else 'MISSING'}, sender_name_from_webhook='{sender_name}', sender_id='{sender_id}', page.access_token={'SET' if page.access_token else 'NONE'}")
-        if not conversation.customer_name:
-            if page.access_token:
-                logger.info(f"[CUSTOMER_NAME] process_messaging_entry: attempting fetch for PSID={sender_id}")
-                name = await fetch_customer_name(sender_id, page.access_token)
-                if name:
-                    conversation.customer_name = name
-                    db.commit()
-                    logger.info(f"[CUSTOMER_NAME] process_messaging_entry: saved name='{name}' for conv {conversation.id}")
-                else:
-                    logger.warning(f"[CUSTOMER_NAME] process_messaging_entry: fetch_customer_name returned None for PSID={sender_id}")
-            else:
-                logger.error(f"[CUSTOMER_NAME] process_messaging_entry: cannot fetch — page.access_token is None for page {page.page_id}")
+        logger.info(f"[CUSTOMER_NAME] process_messaging_entry: new conv {conversation.id}, customer_name='{conversation.customer_name or ''}', sender_name='{sender_name}', sender_id='{sender_id}'")
 
         log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 

@@ -270,7 +270,7 @@ export default function Conversations() {
             const latest = group.items[group.items.length - 1]
             const _isDelayed = isDelayed(latest)
             const _isPriority = isPriority(latest)
-            const displayName = group.customer_name || 'Unknown Customer'
+            const displayName = group.customer_name || group.customer_id
             const copyValue = group.customer_name || group.customer_id
             const cardRing = _isPriority
               ? 'ring-2 ring-red-500 shadow-lg shadow-red-200 border-red-400'

@@ -127,7 +127,31 @@ async def process_webhook_event(entry: dict, db: Session):
 async def process_message(msg: dict, page: FacebookPage, value: dict, db: Session):
     try:
         from_id = msg.get("from", {})
-        logger.info(f"[WEBHOOK_RAW] process_message: msg keys={list(msg.keys())}, from_id type={type(from_id).__name__}, from_id={json.dumps(from_id)[:200]}")
+        message_obj = msg.get("message", {})
+        conversation_obj = msg.get("conversation", {})
+
+        logger.info(f"[FB_DEBUG] ===== CHANGES WEBHOOK - FULL PAYLOAD =====")
+        logger.info(f"[FB_DEBUG] msg keys: {list(msg.keys())}")
+        logger.info(f"[FB_DEBUG] value keys: {list(value.keys())}")
+        logger.info(f"[FB_DEBUG] --- Identifiers ---")
+        logger.info(f"[FB_DEBUG] sender.id (from.id): {from_id.get('id', '') if isinstance(from_id, dict) else str(from_id)}")
+        logger.info(f"[FB_DEBUG] recipient.id (page.id): {page.page_id}")
+        logger.info(f"[FB_DEBUG] message.mid: {message_obj.get('mid', '') if isinstance(message_obj, dict) else ''}")
+        logger.info(f"[FB_DEBUG] message.text: {message_obj.get('text', '') if isinstance(message_obj, dict) else str(message_obj)[:100]}")
+        logger.info(f"[FB_DEBUG] conversation.id: {conversation_obj.get('id', '') if isinstance(conversation_obj, dict) else ''}")
+        logger.info(f"[FB_DEBUG] conversation.thread_id: {conversation_obj.get('thread_id', 'N/A') if isinstance(conversation_obj, dict) else 'N/A'}")
+        logger.info(f"[FB_DEBUG] value.conversation_id: {value.get('conversation_id', 'N/A')}")
+        logger.info(f"[FB_DEBUG] value.thread_id: {value.get('thread_id', 'N/A')}")
+        logger.info(f"[FB_DEBUG] value.participants: {json.dumps(value.get('participants', []))}")
+        logger.info(f"[FB_DEBUG] value.senders: {json.dumps(value.get('senders', []))}")
+        logger.info(f"[FB_DEBUG] --- Full from_id ---")
+        logger.info(f"[FB_DEBUG] from_id (json): {json.dumps(from_id)[:500] if isinstance(from_id, dict) else str(from_id)}")
+        logger.info(f"[FB_DEBUG] --- Full message object ---")
+        logger.info(f"[FB_DEBUG] message (json): {json.dumps(message_obj)[:500] if isinstance(message_obj, dict) else str(message_obj)}")
+        logger.info(f"[FB_DEBUG] --- Full conversation object ---")
+        logger.info(f"[FB_DEBUG] conversation (json): {json.dumps(conversation_obj)[:500] if isinstance(conversation_obj, dict) else str(conversation_obj)}")
+        logger.info(f"[FB_DEBUG] ===== END CHANGES PAYLOAD =====")
+
         if isinstance(from_id, dict):
             sender_id = from_id.get("id", "")
             sender_name = from_id.get("name", "")
@@ -136,7 +160,7 @@ async def process_message(msg: dict, page: FacebookPage, value: dict, db: Sessio
             sender_name = value.get("participants", [{}])[0].get("name", "") if value.get("participants") else ""
 
         conversation_id = (
-            msg.get("conversation", {}).get("id")
+            conversation_obj.get("id")
             or value.get("conversation_id")
             or f"conv_{msg.get('message_id', 'unknown')}"
         )
@@ -283,7 +307,27 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         sender_id = sender.get("id", "")
         sender_name = sender.get("name", "") or sender.get("first_name", "")
         message_data = msg.get("message", {})
-        logger.info(f"[WEBHOOK_RAW] process_messaging_entry: msg keys={list(msg.keys())}, sender={json.dumps(sender)[:300]}, sender_id='{sender_id}', sender_name='{sender_name}'")
+
+        logger.info(f"[FB_DEBUG] ===== MESSAGING WEBHOOK - FULL PAYLOAD =====")
+        logger.info(f"[FB_DEBUG] msg keys: {list(msg.keys())}")
+        logger.info(f"[FB_DEBUG] --- Identifiers ---")
+        logger.info(f"[FB_DEBUG] sender.id: {sender_id}")
+        logger.info(f"[FB_DEBUG] sender.name: {sender_name}")
+        logger.info(f"[FB_DEBUG] recipient.id: {msg.get('recipient', {}).get('id', 'N/A')}")
+        logger.info(f"[FB_DEBUG] message.mid: {message_data.get('mid', 'N/A')}")
+        logger.info(f"[FB_DEBUG] message.text: {message_data.get('text', '')[:100]}")
+        logger.info(f"[FB_DEBUG] message.seq: {message_data.get('seq', 'N/A')}")
+        logger.info(f"[FB_DEBUG] message.is_echo: {message_data.get('is_echo', False)}")
+        logger.info(f"[FB_DEBUG] message.app_id: {message_data.get('app_id', 'N/A')}")
+        logger.info(f"[FB_DEBUG] message.metadata: {message_data.get('metadata', 'N/A')}")
+        logger.info(f"[FB_DEBUG] --- Full sender object ---")
+        logger.info(f"[FB_DEBUG] sender (json): {json.dumps(sender)[:500]}")
+        logger.info(f"[FB_DEBUG] --- Full message object ---")
+        logger.info(f"[FB_DEBUG] message (json): {json.dumps(message_data)[:500]}")
+        logger.info(f"[FB_DEBUG] --- Full msg ---")
+        logger.info(f"[FB_DEBUG] msg (json): {json.dumps(msg)[:1000]}")
+        logger.info(f"[FB_DEBUG] ===== END MESSAGING PAYLOAD =====")
+
         if not sender_id or not message_data:
             return
 

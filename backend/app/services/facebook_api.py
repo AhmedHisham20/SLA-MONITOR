@@ -19,25 +19,37 @@ async def fetch_conversation_link(
         "fields": "id,link",
         "access_token": page_access_token,
     }
+    token_preview = page_access_token[:10] + '...' + page_access_token[-5:] if len(page_access_token) > 15 else 'TOO_SHORT'
+    logger.info(f"[FB_DEBUG] ===== GRAPH API CONVERSATIONS REQUEST =====")
+    logger.info(f"[FB_DEBUG] URL: {url}")
+    logger.info(f"[FB_DEBUG] params (masked): user_id={customer_id}, fields=id,link, access_token={token_preview}")
     async with httpx.AsyncClient(timeout=15) as client:
         try:
             resp = await client.get(url, params=params)
+            body = resp.text
+            logger.info(f"[FB_DEBUG] HTTP status: {resp.status_code}")
+            logger.info(f"[FB_DEBUG] Full response body: {body[:2000]}")
             if resp.status_code != 200:
-                logger.error(f"Graph API conversations error {resp.status_code}: {resp.text[:200]}")
+                logger.error(f"[FB_DEBUG] Graph API conversations error {resp.status_code}: {resp.text[:500]}")
                 return None
             data = resp.json()
             convs = data.get("data", [])
+            logger.info(f"[FB_DEBUG] Number of conversations returned: {len(convs)}")
             if not convs:
-                logger.warning(f"No conversation found for user {customer_id} on page {page_id}")
+                logger.warning(f"[FB_DEBUG] No conversation found for user {customer_id} on page {page_id}")
                 return None
             conv = convs[0]
+            conv_id = conv.get("id")
             link = conv.get("link")
+            logger.info(f"[FB_DEBUG] First conversation: id={conv_id}, link={'SET' if link else 'NULL'}")
+            logger.info(f"[FB_DEBUG] Full first conv object: {json.dumps(conv)}")
             if not link:
-                logger.warning(f"Graph API returned no 'link' field for user {customer_id} on page {page_id}. Full response: {json.dumps(data)}")
+                logger.warning(f"[FB_DEBUG] Graph API returned no 'link' field for user {customer_id} on page {page_id}. Full response: {json.dumps(data)}")
                 return None
+            logger.info(f"[FB_DEBUG] SUCCESS: conversation link = {link}")
             return link
         except Exception as e:
-            logger.error(f"Graph API request failed: {e}")
+            logger.error(f"[FB_DEBUG] Graph API request failed: {e}")
             return None
 
 

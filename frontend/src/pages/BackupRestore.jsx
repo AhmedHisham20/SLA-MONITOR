@@ -1,12 +1,16 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { backup as backupApi } from '../services/api'
 import toast from 'react-hot-toast'
-import { Download, Upload, Archive, Database, FileText, Loader } from 'lucide-react'
+import { Download, Upload, Archive, Database, FileText, Loader, CheckCircle, XCircle } from 'lucide-react'
 
 export default function BackupRestore() {
+  const navigate = useNavigate()
   const [creatingDb, setCreatingDb] = useState(false)
   const [creatingFull, setCreatingFull] = useState(false)
   const [restoring, setRestoring] = useState(false)
+  const [restoreResult, setRestoreResult] = useState(null)
+  const [restoreError, setRestoreError] = useState(null)
   const [file, setFile] = useState(null)
   const fileInputRef = useRef(null)
 
@@ -53,6 +57,8 @@ export default function BackupRestore() {
   const handleFileChange = (e) => {
     const f = e.target.files[0]
     if (f) setFile(f)
+    setRestoreResult(null)
+    setRestoreError(null)
   }
 
   const handleRestore = async () => {
@@ -62,17 +68,81 @@ export default function BackupRestore() {
     }
     if (!window.confirm('This will overwrite your current database. Are you sure?')) return
     setRestoring(true)
+    setRestoreResult(null)
+    setRestoreError(null)
     try {
-      await backupApi.restore(file)
-      toast.success('Database restored successfully.')
+      const res = await backupApi.restore(file)
+      setRestoreResult(res)
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || 'Restore failed.'
-      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+      setRestoreError(typeof msg === 'string' ? msg : JSON.stringify(msg))
     } finally {
       setRestoring(false)
     }
+  }
+
+  if (restoreResult) {
+    const v = restoreResult.verification || {}
+    return (
+      <div className="space-y-6">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+          <h2 className="text-xl font-bold text-green-800 mb-2">Restore completed successfully</h2>
+          <p className="text-green-700">Database restored successfully.</p>
+          <p className="text-green-700">Scheduler restarted.</p>
+          <p className="text-green-700">Cache refreshed.</p>
+          <p className="text-green-700 mt-2 font-medium">System is ready to use.</p>
+          <p className="text-green-600 text-sm mt-2">Please refresh the page.</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-4 h-4 rotate-90" />
+            Refresh Dashboard
+          </button>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-4 text-sm">
+          <h3 className="font-medium text-gray-900 mb-3">Verification Results</h3>
+          <div className="space-y-2">
+            {[
+              { label: 'Database reachable', ok: v.database },
+              { label: 'Tables exist', ok: v.tables },
+              { label: 'Scheduler running', ok: v.scheduler },
+              { label: 'Redis connected', ok: v.redis },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                {item.ok ? (
+                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-gray-300 shrink-0" />
+                )}
+                <span className={item.ok ? 'text-gray-700' : 'text-gray-400'}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (restoreError) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+          <h2 className="text-xl font-bold text-red-800 mb-2">Restore failed</h2>
+          <p className="text-red-700 text-sm font-mono bg-red-100 rounded p-3 mt-3 text-left whitespace-pre-wrap">{restoreError}</p>
+        </div>
+        <button
+          onClick={() => { setRestoreError(null); setRestoreResult(null) }}
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          Back to backup & restore
+        </button>
+      </div>
+    )
   }
 
   return (

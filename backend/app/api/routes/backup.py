@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import Response
 from app.api.deps import require_admin
 from app.models.user import User
@@ -35,9 +35,14 @@ async def backup_restore(
     file: UploadFile = File(...),
     admin: User = Depends(require_admin),
 ):
-    content = await file.read()
-    result = await restore_from_file(content, file.filename or "backup.sql")
-    return result
+    try:
+        content = await file.read()
+        result = await restore_from_file(content, file.filename or "backup.sql")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Restore failed unexpectedly: {str(e)}")
 
 
 @router.get("/info")

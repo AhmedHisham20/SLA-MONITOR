@@ -313,17 +313,6 @@ export default function Conversations() {
                           <Copy className="w-3.5 h-3.5" />
                           Copy Name
                         </button>
-                        {latest.last_sender_type === 'customer' && latest.message_content && (
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(latest.message_content)
-                              showToast('Message copied.')
-                            }}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
-                          >
-                            📋 Copy Message
-                          </button>
-                        )}
                         <a
                           href="https://business.facebook.com/latest/inbox/"
                           target="_blank"
@@ -343,6 +332,25 @@ export default function Conversations() {
                           priority={_isPriority}
                         />
                       </div>
+
+                      {latest.last_sender_type === 'customer' && latest.message_content && (
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200 max-w-[260px] truncate">
+                            <MessageSquare className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{latest.message_content}</span>
+                          </span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(latest.message_content)
+                              showToast('Customer message copied.')
+                            }}
+                            className="shrink-0 inline-flex items-center gap-0.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-1.5 py-1 rounded hover:bg-gray-100 transition-colors"
+                            title="Copy message"
+                          >
+                            📋 Copy
+                          </button>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-4 flex-wrap">
                         {latest.last_sender_type === 'customer' && (

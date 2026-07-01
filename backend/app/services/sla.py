@@ -49,28 +49,34 @@ def check_and_update_sla(
 
         _flag_pending_events_as_exceeded(conversation.id, db)
 
-        # Use the MessageEvent tied to this SLA breach
-        last_msg = None
-        breach_event = db.query(MessageEvent).filter(
+        # Collect all unanswered messages with timestamps
+        unanswered_events = db.query(MessageEvent).filter(
             MessageEvent.conversation_id == conversation.id,
             MessageEvent.replied_at == None,
-            MessageEvent.sla_exceeded == True,
-        ).order_by(MessageEvent.received_at.desc()).first()
-        if breach_event and breach_event.message_text:
-            last_msg = breach_event.message_text
+            MessageEvent.message_text != None,
+            MessageEvent.message_text != '',
+        ).order_by(MessageEvent.received_at.asc()).all()
 
-        if not last_msg:
-            if conversation.unanswered_texts:
-                try:
-                    texts = json.loads(conversation.unanswered_texts)
-                    if isinstance(texts, list) and texts:
-                        last_msg = texts[-1]
-                    elif isinstance(texts, str) and texts:
-                        last_msg = texts
-                except (json.JSONDecodeError, TypeError):
-                    pass
-            if not last_msg and conversation.message_content:
-                last_msg = conversation.message_content
+        unanswered_messages = [(e.message_text, e.received_at) for e in unanswered_events]
+
+        # Fallback: if no MessageEvent rows exist, try unanswered_texts
+        if not unanswered_messages and conversation.unanswered_texts:
+            try:
+                texts = json.loads(conversation.unanswered_texts)
+                if isinstance(texts, list) and texts:
+                    for t in texts:
+                        if isinstance(t, str) and t.strip():
+                            unanswered_messages.append((t, conversation.message_timestamp))
+                elif isinstance(texts, str) and texts.strip():
+                    unanswered_messages.append((texts, conversation.message_timestamp))
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        # Calculate display waiting time from oldest unanswered message
+        display_waiting_minutes = int(elapsed)
+        if unanswered_messages:
+            oldest_ts = unanswered_messages[0][1]
+            display_waiting_minutes = int((now - oldest_ts).total_seconds() / 60)
 
         page = db.query(FacebookPage).filter(
             FacebookPage.page_id == conversation.page_id
@@ -79,11 +85,9 @@ def check_and_update_sla(
 
         alert_body = build_delay_alert_sync(
             page_name=page_name,
-            customer_name=conversation.customer_name or conversation.customer_id,
-            waiting_minutes=int(elapsed),
-            customer_message=last_msg,
-            received_at=conversation.message_timestamp,
-            conversation_link=conversation.conversation_link,
+            customer_id=conversation.customer_id,
+            waiting_minutes=display_waiting_minutes,
+            unanswered_messages=unanswered_messages,
         )
 
         conversation.alert_sent = True
@@ -125,25 +129,40 @@ def determine_delay_level(conversation: Conversation, elapsed_minutes: float, se
 
 def build_delay_alert_sync(
     page_name: str,
-    customer_name: str,
+    customer_id: str,
     waiting_minutes: int,
-    customer_message: Optional[str],
-    received_at: datetime,
-    conversation_link: str,
+    unanswered_messages: list[tuple[str, datetime]],
 ) -> str:
-    egypt_time = received_at.astimezone(EGYPT_TZ)
-    received_fmt = egypt_time.strftime("%d/%m/%Y %I:%M %p")
+    msg = f"\U0001f6a8 Messenger SLA Alert\n\n"
+    msg += f"\U0001f4c4 Page:\n{page_name}\n\n"
+    msg += f"\U0001f464 Customer ID:\n{customer_id}\n\n"
+    msg += f"\U0001f552 Waiting Time:\n{waiting_minutes} minutes\n\n"
 
-    msg = f"\U0001f6a8 SLA Alert\n\n"
-    msg += f"Page: {page_name}\n\n"
-    msg += f"Customer: {customer_name}\n\n"
-    msg += f"Waiting Time: {waiting_minutes} minutes\n\n"
-    if customer_message:
-        msg += f"Unanswered Customer Message:\n\"{customer_message}\"\n\n"
-    msg += f"Received:\n{received_fmt}\n\n"
-    if conversation_link:
-        msg += f"Open Chat:\n{conversation_link}\n\n"
-    msg += f"Dashboard:\n{app_settings.FRONTEND_URL}"
+    if unanswered_messages:
+        first_ts = unanswered_messages[0][1]
+        egypt_first = first_ts.astimezone(EGYPT_TZ)
+        received_fmt = egypt_first.strftime("%d/%m/%Y %I:%M %p")
+        msg += f"\U0001f4c5 First Message Received:\n{received_fmt}\n"
+        msg += f"(Egypt Time)\n\n"
+
+    msg += f"\u2501" * 18 + "\n\n"
+
+    if unanswered_messages:
+        msg += f"\U0001f4ac Unanswered Messages\n\n"
+        for i, (text, ts) in enumerate(unanswered_messages, start=1):
+            egypt_ts = ts.astimezone(EGYPT_TZ)
+            ts_fmt = egypt_ts.strftime("%d/%m/%Y %I:%M %p")
+            msg += f"{i}.\n{ts_fmt}\n{text}\n\n"
+
+    msg += f"\u2501" * 18 + "\n\n"
+
+    msg += f"\U0001f310 Open Meta Business Inbox\n\n"
+    msg += f"https://business.facebook.com/latest/inbox\n\n"
+
+    msg += f"\u2501" * 18 + "\n\n"
+
+    msg += f"\U0001f4ca Dashboard\n\n"
+    msg += f"{app_settings.FRONTEND_URL}/dashboard"
     return msg
 
 

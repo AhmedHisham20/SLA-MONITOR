@@ -95,4 +95,19 @@ export const logs = {
     api.get('/logs', { params: { limit, source, level } }).then((r) => r.data),
 }
 
+export const backup = {
+  database: () =>
+    api.post('/backup/database', null, { responseType: 'blob' }).then((r) => r.data),
+  full: () =>
+    api.post('/backup/full', null, { responseType: 'blob' }).then((r) => r.data),
+  restore: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/backup/restore', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
+  info: () => api.get('/backup/info').then((r) => r.data),
+}
+
 export default api

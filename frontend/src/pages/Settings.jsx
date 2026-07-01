@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { settings as settingsApi, whatsapp, logs as logsApi } from '../services/api'
 import toast from 'react-hot-toast'
 import { Eye, EyeOff } from 'lucide-react'
+import BackupRestore from './BackupRestore'
 
-const tabs = ['General', 'SLA', 'WhatsApp', 'Facebook Pages', 'Page Monitoring', 'Logs']
+const tabs = ['General', 'SLA', 'WhatsApp', 'Facebook Pages', 'Page Monitoring', 'Logs', 'Backup & Restore']
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('General')
@@ -484,6 +485,10 @@ export default function Settings() {
           </div>
         )}
 
+        {activeTab === 'Backup & Restore' && (
+          <BackupRestore />
+        )}
+
         {activeTab === 'Page Monitoring' && (
           <div className="space-y-4">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
@@ -567,11 +572,13 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <button onClick={handleSave} disabled={saving} className="btn-primary">
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
+        {activeTab !== 'Backup & Restore' && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button onClick={handleSave} disabled={saving} className="btn-primary">
+              {saving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

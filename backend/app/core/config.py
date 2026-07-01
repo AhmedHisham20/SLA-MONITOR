@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     DEMO_MODE: bool = False
     FRONTEND_URL: str = "https://dashboard.ahmedhisham.site"
 
+    UPLOAD_DIR: str = "/app/uploads"
+
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "https://dashboard.ahmedhisham.site"]
 
     class Config:

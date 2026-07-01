@@ -313,14 +313,24 @@ export default function Conversations() {
                           <Copy className="w-3.5 h-3.5" />
                           Copy Name
                         </button>
+                        {latest.last_sender_type === 'customer' && latest.message_content && (
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(latest.message_content)
+                              showToast('Message copied.')
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            📋 Copy Message
+                          </button>
+                        )}
                         <a
                           href="https://business.facebook.com/latest/inbox/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200"
-                          title="Open Messenger Inbox"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
                         >
-                          🔗
+                          🌐 Open Meta Inbox
                         </a>
                       </div>
 

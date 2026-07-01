@@ -72,7 +72,7 @@ async def check_pending_sla():
                 pn_id = settings_obj.whatsapp_phone_number_id
                 token = settings_obj.whatsapp_access_token
                 if recipient and pn_id and token:
-                    logger.info(f"WhatsApp send attempt | Conversation: {conv.id} | Customer ID: {conv.customer_id}")
+                    logger.info(f"WhatsApp send attempt | Timestamp: {datetime.now(timezone.utc).isoformat()} | Conversation: {conv.id} | Customer ID: {conv.customer_id}")
                     success = await send_whatsapp_message(
                         to=recipient,
                         message=body,
@@ -86,8 +86,8 @@ async def check_pending_sla():
         logger.info(f"Eligible for alert: {eligible_count}")
         logger.info(f"Alerts actually sent: {alerts_sent_count}")
         logger.info("Scheduler Finished")
-    except Exception as e:
-        logger.error(f"SLA check error: {str(e)}")
+    except Exception:
+        logger.exception("SLA check error")
     finally:
         db.close()
 
@@ -123,8 +123,8 @@ async def send_daily_summary():
                 access_token=token,
             )
             logger.info("Daily summary sent")
-    except Exception as e:
-        logger.error(f"Daily summary error: {str(e)}")
+    except Exception:
+        logger.exception("Daily summary error")
     finally:
         db.close()
 

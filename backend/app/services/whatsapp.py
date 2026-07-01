@@ -37,13 +37,20 @@ async def send_whatsapp_message(
             response = await client.post(url, json=payload, headers=headers)
             if response.status_code in [200, 201]:
                 result = response.json()
-                logger.info(f"WhatsApp API response: {result}")
+                logger.info(f"WhatsApp API | Status: {response.status_code} | Body: {result} | Success: True")
                 return True
             else:
-                logger.error(f"WhatsApp API error: {response.status_code} - {response.text}")
+                fb_error = ""
+                try:
+                    err_body = response.json()
+                    error_data = err_body.get("error", {})
+                    fb_error = error_data.get("message", response.text)
+                except Exception:
+                    fb_error = response.text
+                logger.error(f"WhatsApp API | Status: {response.status_code} | Body: {response.text} | Facebook Error: {fb_error} | Success: False")
                 return False
         except Exception as e:
-            logger.error(f"WhatsApp request failed: {str(e)}")
+            logger.error(f"WhatsApp API | Status: N/A | Body: N/A | Facebook Error: {str(e)} | Success: False")
             return False
 
 

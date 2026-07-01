@@ -16,10 +16,42 @@ scheduler = AsyncIOScheduler()
 
 
 async def check_pending_sla():
-    logger.info("Running SLA check for pending conversations...")
+    logger.info("SLA Scheduler Started")
     db = SessionLocal()
     try:
         settings_obj = db.query(SystemSettings).first()
+
+        # === DIAGNOSTIC: enumerate all open conversations ===
+        all_open = db.query(Conversation, FacebookPage).join(
+            FacebookPage, Conversation.page_id == FacebookPage.page_id
+        ).filter(Conversation.is_open == True).all()
+
+        logger.info(f"Conversations checked: {len(all_open)}")
+
+        delayed_count = 0
+        already_sent_count = 0
+        page_replied_count = 0
+        monitoring_disabled_count = 0
+
+        for conv, page in all_open:
+            if not page.monitoring_enabled:
+                monitoring_disabled_count += 1
+                logger.info(f"Conversation {conv.id} Skipped Reason: monitoring disabled")
+            elif conv.alert_sent:
+                already_sent_count += 1
+                logger.info(f"Conversation {conv.id} Skipped Reason: alert_sent=True")
+            elif conv.last_sender_type == 'page':
+                page_replied_count += 1
+                logger.info(f"Conversation {conv.id} Skipped Reason: last_sender_type=page")
+            else:
+                delayed_count += 1
+
+        logger.info(f"Delayed conversations: {delayed_count}")
+        logger.info(f"Already alert_sent: {already_sent_count}")
+        logger.info(f"Skipped because page replied: {page_replied_count}")
+        logger.info(f"Skipped because monitoring disabled: {monitoring_disabled_count}")
+
+        # === ORIGINAL PROCESSING (unchanged) ===
         pending_convs = db.query(Conversation).join(
             FacebookPage, Conversation.page_id == FacebookPage.page_id
         ).filter(
@@ -29,21 +61,31 @@ async def check_pending_sla():
             Conversation.last_sender_type == 'customer',
         ).all()
 
+        eligible_count = 0
+        alerts_sent_count = 0
+
         for conv in pending_convs:
             triggered, body = check_and_update_sla(conv, db, settings_obj)
             if triggered and body and settings_obj:
+                eligible_count += 1
                 recipient = settings_obj.whatsapp_recipient_number
                 pn_id = settings_obj.whatsapp_phone_number_id
                 token = settings_obj.whatsapp_access_token
                 if recipient and pn_id and token:
-                    await send_whatsapp_message(
+                    logger.info(f"WhatsApp send attempt | Conversation: {conv.id} | Customer ID: {conv.customer_id}")
+                    success = await send_whatsapp_message(
                         to=recipient,
                         message=body,
                         phone_number_id=pn_id,
                         access_token=token,
                     )
+                    logger.info(f"WhatsApp send result | Conversation: {conv.id} | Success: {success}")
+                    if success:
+                        alerts_sent_count += 1
 
-        logger.info(f"Checked {len(pending_convs)} pending conversations")
+        logger.info(f"Eligible for alert: {eligible_count}")
+        logger.info(f"Alerts actually sent: {alerts_sent_count}")
+        logger.info("Scheduler Finished")
     except Exception as e:
         logger.error(f"SLA check error: {str(e)}")
     finally:

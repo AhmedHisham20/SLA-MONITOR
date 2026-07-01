@@ -90,6 +90,17 @@ export const whatsapp = {
   update: (data) => api.post('/whatsapp/settings', data).then((r) => r.data),
 }
 
+export const users = {
+  list: () => api.get('/users').then((r) => r.data),
+  get: (id) => api.get(`/users/${id}`).then((r) => r.data),
+  create: (data) => api.post('/users', data).then((r) => r.data),
+  update: (id, data) => api.put(`/users/${id}`, data).then((r) => r.data),
+  delete: (id) => api.delete(`/users/${id}`).then((r) => r.data),
+  resetPassword: (id, newPassword) =>
+    api.post(`/users/${id}/reset-password`, { new_password: newPassword }).then((r) => r.data),
+  myPermissions: () => api.get('/users/me/permissions').then((r) => r.data),
+}
+
 export const logs = {
   get: (limit = 100, source = null, level = null) =>
     api.get('/logs', { params: { limit, source, level } }).then((r) => r.data),

@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import logger
 from app.db.session import engine, Base, SessionLocal
-from app.api.routes import auth, dashboard, conversations, reports, settings as settings_routes, webhooks, whatsapp, logs, backup
+from app.api.routes import auth, dashboard, conversations, reports, settings as settings_routes, webhooks, whatsapp, logs, backup, users as users_routes
+from app.api.permissions import PermissionMiddleware
 from app.tasks import start_scheduler
 
 
@@ -49,6 +50,9 @@ app.include_router(webhooks.router, prefix=api_prefix)
 app.include_router(whatsapp.router, prefix=api_prefix)
 app.include_router(logs.router, prefix=api_prefix)
 app.include_router(backup.router, prefix=api_prefix)
+app.include_router(users_routes.router, prefix=api_prefix)
+
+app.add_middleware(PermissionMiddleware)
 
 
 @app.get("/health")

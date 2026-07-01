@@ -13,14 +13,16 @@ import {
   FlaskConical,
   Monitor,
   ChevronRight,
+  Users,
 } from 'lucide-react'
 
-const navItems = [
-  { to: '/', icon: Monitor, label: 'Home', end: true },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: false },
-  { to: '/conversations', icon: MessageSquare, label: 'Conversations' },
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const allNavItems = [
+  { to: '/', icon: Monitor, label: 'Home', end: true, perm: 'home' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: false, perm: 'dashboard' },
+  { to: '/conversations', icon: MessageSquare, label: 'Conversations', perm: 'conversations' },
+  { to: '/reports', icon: BarChart3, label: 'Reports', perm: 'reports' },
+  { to: '/settings', icon: Settings, label: 'Settings', perm: 'settings' },
+  { to: '/users', icon: Users, label: 'Users', perm: 'user_management' },
 ]
 
 function useMediaQuery(query) {
@@ -43,8 +45,10 @@ export default function Layout() {
     return false
   })
   const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1023px)')
-  const { user, logout, demoMode } = useAuth()
+  const { user, logout, demoMode, hasPermission } = useAuth()
   const navigate = useNavigate()
+
+  const navItems = allNavItems.filter((item) => hasPermission(item.perm))
 
   useEffect(() => {
     if (isTablet) {

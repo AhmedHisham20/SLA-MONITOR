@@ -32,11 +32,13 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+const isLoginRequest = (config) => config?.url?.endsWith('/auth/login')
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (_demoMode) return Promise.reject(error)
-    if (error.response?.status === 401) {
+    if (!isLoginRequest(error.config) && error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'

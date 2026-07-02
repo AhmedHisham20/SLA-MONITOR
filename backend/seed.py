@@ -10,16 +10,16 @@ def seed():
     db = SessionLocal()
 
     try:
-        existing_admin = db.query(User).filter(User.email == "admin@example.com").first()
+        existing_admin = db.query(User).filter(User.email == "ahmed.hisham191220@gmail.com").first()
         if not existing_admin:
             admin = User(
-                email="admin@example.com",
-                hashed_password=get_password_hash("admin123"),
+                email="ahmed.hisham191220@gmail.com",
+                hashed_password=get_password_hash("01015177863@@E"),
                 full_name="Admin User",
                 role=UserRole.ADMIN,
             )
             db.add(admin)
-            print("Admin user created: admin@example.com / admin123")
+            print("Admin user created: ahmed.hisham191220@gmail.com / 01015177863@@E")
         else:
             print("Admin user already exists")
 

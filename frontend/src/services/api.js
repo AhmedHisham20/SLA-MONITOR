@@ -123,4 +123,13 @@ export const backup = {
   info: () => api.get('/backup/info').then((r) => r.data),
 }
 
+export const leads = {
+  list: (params) => api.get('/leads', { params }).then((r) => r.data),
+  stats: () => api.get('/leads/stats').then((r) => r.data),
+  pages: () => api.get('/leads/pages').then((r) => r.data),
+  exportCsv: (params) =>
+    api.get('/leads/export/csv', { params, responseType: 'blob' }).then((r) => r.data),
+  scan: () => api.post('/leads/scan').then((r) => r.data),
+}
+
 export default api

@@ -11,6 +11,7 @@ from app.services.sla import check_and_update_sla
 from app.models.page import FacebookPage
 from app.core.logging import logger
 from app.core.datetime_utils import yesterday_range_utc
+from app.services.lead_extractor import run_lead_scan
 
 scheduler = AsyncIOScheduler()
 
@@ -143,6 +144,14 @@ def start_scheduler():
         CronTrigger(hour=23, minute=0),
         id="daily_summary",
         name="Send daily summary at 23:00",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        run_lead_scan,
+        CronTrigger(second="*/60"),
+        id="lead_scan",
+        name="Scan conversations for phone numbers every 60 seconds",
         replace_existing=True,
     )
 

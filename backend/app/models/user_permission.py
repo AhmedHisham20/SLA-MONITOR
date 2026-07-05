@@ -15,6 +15,7 @@ ALL_PERMISSIONS = [
     "backup",
     "settings",
     "user_management",
+    "leads_crm",
 ]
 
 

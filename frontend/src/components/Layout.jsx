@@ -14,6 +14,7 @@ import {
   Monitor,
   ChevronRight,
   Users,
+  UsersRound,
 } from 'lucide-react'
 
 const allNavItems = [
@@ -21,6 +22,7 @@ const allNavItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: false, perm: 'dashboard' },
   { to: '/conversations', icon: MessageSquare, label: 'Conversations', perm: 'conversations' },
   { to: '/reports', icon: BarChart3, label: 'Reports', perm: 'reports' },
+  { to: '/leads', icon: UsersRound, label: 'Leads CRM', perm: 'leads_crm' },
   { to: '/settings', icon: Settings, label: 'Settings', perm: 'settings' },
   { to: '/users', icon: Users, label: 'Users', perm: 'user_management' },
 ]

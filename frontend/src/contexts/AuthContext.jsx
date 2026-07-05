@@ -4,7 +4,7 @@ import { auth, users as usersApi, checkDemoMode } from '../services/api'
 const ALL_PERMISSIONS = [
   'home', 'dashboard', 'conversations', 'reports',
   'facebook_pages', 'whatsapp', 'logs', 'backup',
-  'settings', 'user_management',
+  'settings', 'user_management', 'leads_crm',
 ]
 
 const AuthContext = createContext(null)

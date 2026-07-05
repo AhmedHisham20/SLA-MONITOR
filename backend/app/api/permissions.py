@@ -20,6 +20,7 @@ PERMISSION_MAP = [
     (re.compile(r"^/api/v1/backup"), "backup"),
     (re.compile(r"^/api/v1/users"), "user_management"),
     (re.compile(r"^/api/v1/settings"), "settings"),
+    (re.compile(r"^/api/v1/leads"), "leads_crm"),
 ]
 
 PUBLIC_PREFIXES = [

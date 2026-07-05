@@ -17,6 +17,7 @@ const ALL_PERMISSION_LABELS = {
   backup: 'Backup & Restore',
   settings: 'Settings',
   user_management: 'User Management',
+  leads_crm: 'Leads CRM',
 }
 
 const ALL_PERMISSIONS = Object.keys(ALL_PERMISSION_LABELS)

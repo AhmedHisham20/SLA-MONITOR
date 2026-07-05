@@ -1,15 +1,13 @@
 import re
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
 from app.models.lead import Lead
 from app.models.conversation import Conversation
 from app.models.message_event import MessageEvent
 from app.models.page import FacebookPage
-from app.core.logging import logger
 
-PHONE_REGEX = re.compile(r'(?<!\d)(?:\+?20)?(?:1[0125]\d{8})(?!\d)')
+PHONE_REGEX = re.compile(r'(?<!\d)(?:\+?20)?0?(?:1[0125]\d{8})(?!\d)')
 
 NAME_PATTERNS = [
     (re.compile(r'\u0627\u0633\u0645\u064a\s+(\S+)', re.UNICODE),),
@@ -142,14 +140,33 @@ def scan_and_create_leads(db: Session, since: datetime | None = None) -> int:
     return created
 
 
-def run_lead_scan():
-    db = SessionLocal()
-    try:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
-        count = scan_and_create_leads(db, since=cutoff)
-        if count:
-            logger.info(f"Lead scanner: created {count} new leads")
-    except Exception:
-        logger.exception("Lead scanner error")
-    finally:
-        db.close()
+def check_and_extract_lead(db: Session, conv: Conversation, message_text: str | None, page_name: str | None):
+    if not message_text:
+        return
+    phones = extract_phones(message_text)
+    if not phones:
+        return
+    name = _extract_name_from_text(message_text) or conv.customer_name or 'Unknown Customer'
+    for phone in phones:
+        existing = db.query(Lead).filter(Lead.phone_number == phone).first()
+        if existing:
+            existing.detection_count += 1
+            existing.last_seen = datetime.now(timezone.utc)
+            existing.last_message = message_text
+            existing.conversation_id = conv.id
+            if name != 'Unknown Customer' and (existing.customer_name == 'Unknown Customer' or not existing.customer_name):
+                existing.customer_name = name
+        else:
+            lead = Lead(
+                phone_number=phone,
+                customer_name=name,
+                messenger_name=conv.customer_name,
+                facebook_psid=conv.customer_id,
+                conversation_id=conv.id,
+                page_name=page_name,
+                first_detected_at=datetime.now(timezone.utc),
+                last_seen=datetime.now(timezone.utc),
+                last_message=message_text,
+                detection_count=1,
+            )
+            db.add(lead)

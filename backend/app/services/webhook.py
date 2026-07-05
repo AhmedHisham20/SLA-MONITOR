@@ -428,6 +428,10 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
             if not existing.cached_conversation_link:
                 await fetch_and_cache_conversation_link(existing, page, db)
             log_event("info", "webhook", f"Appended msg to conversation {existing.id}, sender {sender_id[:20]}")
+            if message_text:
+                from app.services.lead_extractor import check_and_extract_lead
+                check_and_extract_lead(db, existing, message_text, page.page_name)
+                db.commit()
             return
 
         new_conv_id = f"conv_{sender_id}_{page_id}_{int(datetime.now(timezone.utc).timestamp())}"
@@ -460,5 +464,10 @@ async def process_messaging_entry(msg: dict, page_id: str, db: Session):
         log_event("info", "webhook", f"Created conversation {conversation.id} for page {page.page_name}, sender {sender_id[:20]}")
 
         check_and_update_sla(conversation, db)
+
+        if message_text:
+            from app.services.lead_extractor import check_and_extract_lead
+            check_and_extract_lead(db, conversation, message_text, page.page_name)
+            db.commit()
     except Exception as e:
         log_event("error", "webhook", f"Error in process_messaging_entry", str(e)[:200])

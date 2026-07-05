@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import logger
-from app.db.session import engine, Base, SessionLocal
+from app.db.session import SessionLocal
 from app.api.routes import auth, dashboard, conversations, reports, settings as settings_routes, webhooks, whatsapp, logs, backup, users as users_routes, leads as leads_routes
 from app.api.permissions import PermissionMiddleware
 from app.tasks import start_scheduler
@@ -12,7 +12,6 @@ from app.tasks import start_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME}")
-    Base.metadata.create_all(bind=engine)
     if settings.DEMO_MODE:
         logger.info("DEMO_MODE enabled - seeding demo data")
         db = SessionLocal()
